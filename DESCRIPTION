@@ -1,0 +1,23 @@
+Package: aenmd
+Type: Package
+Title: Annotating variants with escape from NMD
+Version: 0.1.0
+Author: Dennis Kostka
+Maintainer: Dennis Kostka <kostka@pitt.edu>
+Description: Annotation of genetic variants with predicted escape from nonsene mediated decay (NMD).
+License: Artistic-2.0
+Encoding: UTF-8
+LazyData: true
+Imports: 
+    Biostrings,
+    BSgenome,
+    BSgenome.Hsapiens.NCBI.GRCh38,
+    GenomeInfoDb,
+    GenomicRanges,
+    IRanges,
+    S4Vectors,
+    utils,
+    vcfR
+RoxygenNote: 7.1.2
+Depends: 
+    R (>= 3.5.0)
