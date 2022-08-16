@@ -11,8 +11,8 @@ parse_vcf <- function(vcf_filename, pass_only = TRUE){
     vcf_rng  <- GenomicRanges::GRanges(vcfR::getCHROM(vcf),
                                        IRanges::IRanges(vcfR::getPOS(vcf),
                                                         vcfR::getPOS(vcf)))
-    vcf_rng$ref     <- vcfR::getREF(vcf)
-    vcf_rng$alt     <- vcfR::getALT(vcf)
+    vcf_rng$ref     <- vcfR::getREF(vcf) |> Biostrings::DNAStringSet()
+    vcf_rng$alt     <- vcfR::getALT(vcf) |> Biostrings::DNAStringSet()
     vcf_rng$id      <- vcfR::getID(vcf)
     vcf_rng$filter  <- vcfR::getFILTER(vcf)
 
@@ -42,7 +42,7 @@ annotate_nmd <- function(vcf_rng, check_ref = TRUE){
 
     #- expand the vcf ranges to contain first and last base of refrence allele
     vcf_rng <-  GenomicRanges::resize(vcf_rng,
-                                      width = nchar(vcf_rng$ref),
+                                      width = Biostrings::width(vcf_rng$ref),
                                       fix="start")
 
     #- check if reference variants are legal
@@ -61,10 +61,10 @@ annotate_nmd <- function(vcf_rng, check_ref = TRUE){
     vcf_rng  <- vcf_rng[-out_idx]
 
     #- Classify ins, del, sbs, assign key
-    vcf_rng$type                                           <- NA
-    vcf_rng$type[nchar(vcf_rng$ref) >  nchar(vcf_rng$alt)] <- 'del'
-    vcf_rng$type[nchar(vcf_rng$ref) <  nchar(vcf_rng$alt)] <- 'ins'
-    vcf_rng$type[nchar(vcf_rng$ref) == nchar(vcf_rng$alt)] <- 'sbs'
+    vcf_rng$type                                                                   <- NA
+    vcf_rng$type[Biostrings::width(vcf_rng$ref) >  Biostrings::width(vcf_rng$alt)] <- 'del'
+    vcf_rng$type[Biostrings::width(vcf_rng$ref) <  Biostrings::width(vcf_rng$alt)] <- 'ins'
+    vcf_rng$type[Biostrings::width(vcf_rng$ref) == Biostrings::width(vcf_rng$alt)] <- 'sbs'
     vcf_rng$key <- paste(as.character(vcf_rng),vcf_rng$ref,vcf_rng$alt,sep="|")
 
     #- check that we only have unique variants
@@ -75,12 +75,16 @@ annotate_nmd <- function(vcf_rng, check_ref = TRUE){
     #- explode variants into variant/transcript pairs
     #  FIXME: we could make the transcript set more flexible...
     #         maybe pass it as a function arg, provide more than just tsl=1
-    ov                 <- findOverlaps(vcf_rng, ._EA_txs_grl)
-    vcf_rng_by_tx      <- vcf_rng[queryHits(ov)] #- 405,094
-    vcf_rng_by_tx$enst <- names(._EA_txs_grl)[subjectHits(ov)]
+    ov                 <- GenomicRanges::findOverlaps(vcf_rng, ._EA_txs_grl)
+    vcf_rng_by_tx      <- vcf_rng[S4Vectors::queryHits(ov)] #- 405,094
+    vcf_rng_by_tx$enst <- names(._EA_txs_grl)[S4Vectors::subjectHits(ov)]
 
     #- actually annotate variants
-    res <- normalize_vars(vcf_rng_by_tx)
+    ##res <- annotate_vars(vcf_rng_by_tx)
+    rr <- lapply(seq_len(length(vcf_rng_by_tx)), function(ind) annotate_variant(vcf_rng_by_tx[ind],vcf_rng_by_tx[ind]$enst ))
+    rmat <- unlist(lapply(rr,function(x) x[[1]])) |> matrix(byrow=TRUE, ncol=5)
+    colnames(rmat) <- rr[[1]]$rules |> names()
+    vcf_rng_by_tx$rules <- rmat
 
-    return(res)
+    return(vcf_rng_by_tx)
 }

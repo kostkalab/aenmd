@@ -22,12 +22,16 @@ annotate_variant <- function(rng, tx){
     sae <- get_start_end(gr1 = rng, gr2 = exn)
 
     #- get the alternative version of the DNA sequence
-    seq_alt <- Biostrings::xscat(Biostrings::subseq(seq_ref, 1, sae[1]-1), rng$alt,
+    alt_var <- rng$alt
+    if(all(GenomicRanges::strand(exn) == '-')) {
+        alt_var <- Biostrings::reverseComplement(alt_var)
+    }
+    seq_alt <- Biostrings::xscat(Biostrings::subseq(seq_ref, 1, sae[1]-1), alt_var,
                                  Biostrings::subseq(seq_ref, sae[2]+1, length(seq_ref)))[[1]]
 
     #- map exon starts to alternative sequence
     es_new      <- S4Vectors::metadata(seq_ref)$exon_starts
-    delta_len   <- nchar(rng$alt) - nchar(rng$ref)
+    delta_len   <- Biostrings::width(rng$alt) - Biostrings::width(rng$ref)
     ind         <- es_new > sae[2]
     es_new[ind] <- es_new[ind] + delta_len
     #- we could have removed whole exons:
