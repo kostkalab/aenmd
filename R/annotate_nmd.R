@@ -56,7 +56,9 @@ annotate_nmd <- function(vcf_rng, check_ref = TRUE){
     #- filter out variants that overlap splice sites
     # FIXME: this filters too much, e.g. when (sets of) exons get deleted.
     #        -> filter only when fist/last nucleotide overlap splice region?
-    ov       <- GenomicRanges::findOverlaps(vcf_rng, ._EA_spl_grl)
+
+    ov       <- GenomicRanges::findOverlaps(vcf_rng,
+                                            future::value(._EA_spl_grl))
     out_idx  <- sort(unique(S4Vectors::queryHits(ov)))
     if(length(out_idx)>0){
         vcf_rng  <- vcf_rng[-out_idx]
@@ -77,9 +79,10 @@ annotate_nmd <- function(vcf_rng, check_ref = TRUE){
     #- explode variants into variant/transcript pairs
     #  FIXME: we could make the transcript set more flexible...
     #         maybe pass it as a function arg, provide more than just tsl=1
-    ov                 <- GenomicRanges::findOverlaps(vcf_rng, ._EA_txs_grl)
+    ov                 <- GenomicRanges::findOverlaps(vcf_rng,
+                                                      future::value(._EA_txs_grl))
     vcf_rng_by_tx      <- vcf_rng[S4Vectors::queryHits(ov)] #- 405,094
-    vcf_rng_by_tx$enst <- names(._EA_txs_grl)[S4Vectors::subjectHits(ov)]
+    vcf_rng_by_tx$enst <- names(future::value(._EA_txs_grl))[S4Vectors::subjectHits(ov)]
 
     #- actually annotate variants
     ##res <- annotate_vars(vcf_rng_by_tx)

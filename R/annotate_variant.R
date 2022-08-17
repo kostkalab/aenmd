@@ -11,8 +11,8 @@ annotate_variant <- function(rng, tx){
 
     #- refrence exons and reference sequence from their environments
     #- envs are in ./inst/extdata and loaded in zzz.R.
-    exn     <- ._EA_exn_env[[tx]] #- exons of the transcript;
-    seq_ref <- ._EA_cds_env[[tx]] #- reference allele sequence;
+    exn     <- future::value(._EA_exn_env)[[tx]] #- exons of the transcript;
+    seq_ref <- future::value(._EA_cds_env)[[tx]] #- reference allele sequence;
 
     #- add the exon starts to seq_ref
     S4Vectors::metadata(seq_ref) <- list(exon_starts = c(1, cumsum(GenomicRanges::width(exn))+1) |>
