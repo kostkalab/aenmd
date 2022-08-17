@@ -58,12 +58,15 @@ annotate_nmd <- function(vcf_rng, check_ref = TRUE, verbose = FALSE){
     }
 
     #- filter out variants that overlap splice sites
-    # FIXME: this filters too much, e.g. when (sets of) exons get deleted.
-    #        -> filter only when fist/last nucleotide overlap splice region?
+    #  we filter out ranges where either start or end overlap a splice region.
     if(verbose) message("Filtering out splice variants.")
-    ov       <- GenomicRanges::findOverlaps(vcf_rng,
-                                            future::value(._EA_spl_grl))
-    out_idx  <- sort(unique(S4Vectors::queryHits(ov)))
+    ov_starts <- GenomicRanges::findOverlaps(GenomicRanges::resize(vcf_rng, width=1L, fix='start'),
+                                             future::value(._EA_spl_grl))
+    ov_ends   <- GenomicRanges::findOverlaps(GenomicRanges::resize(vcf_rng, width=1L, fix='end'),
+                                             future::value(._EA_spl_grl))
+
+    out_idx  <- sort(c(unique(S4Vectors::queryHits(ov_starts)),
+                       unique(S4Vectors::queryHits(ov_ends))))
     if(length(out_idx)>0){
         vcf_rng  <- vcf_rng[-out_idx]
     }

@@ -4,7 +4,7 @@
 \alias{annotate_nmd}
 \title{Wrapper function for annotating a set of variants with NMD escape}
 \usage{
-annotate_nmd(vcf_rng, check_ref = TRUE)
+annotate_nmd(vcf_rng, check_ref = TRUE, verbose = FALSE)
 }
 \arguments{
 \item{vcf_rng}{GRanges object of variants. Start is first base of variant.
@@ -12,6 +12,8 @@ Each variant is of length 1.
 Each variant has an ``ref`` and ``alt`` metadata column with DNAStrings of the sequences.}
 
 \item{check_ref}{Logical. Should the reference alleles be checked against assembly.}
+
+\item{verbose}{Logical. Report progress.}
 }
 \value{
 List.

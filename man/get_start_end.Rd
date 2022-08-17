@@ -9,7 +9,8 @@ get_start_end(gr1, gr2)
 \arguments{
 \item{gr1}{GRanges object. Single range, no strand. The variant. Start is first nucleotide, end is last nucleotide.}
 
-\item{gr2}{GRanges object. Exon ranges. All on the same strand. Sorted 5' to 3' (i.e., "reversed" on negative strand).}
+\item{gr2}{GRanges object. Exon ranges. All on the same strand. Sorted 5' to 3' (i.e., "reversed" on negative strand).
+Both ``gr1`` and ``gr2`` need to be on the same chromosome.}
 }
 \value{
 Numeric. Vector with start, end, and the overlapping exons.
