@@ -41,8 +41,8 @@ annotate_variant <- function(rng, tx){
     S4Vectors::metadata(seq_alt) <- list(exon_starts = es_new)
 
     #- translate into protein space
-    seq_ref_p <- Biostrings::translate(seq_ref)
-    seq_alt_p <- Biostrings::translate(seq_alt)
+    seq_ref_p <- suppressWarnings(Biostrings::translate(seq_ref))
+    seq_alt_p <- suppressWarnings(Biostrings::translate(seq_alt))
     #- add the exon boundaries (1st aa in each exon) to protein space
     S4Vectors::metadata(seq_ref_p)$exon_starts <- (S4Vectors::metadata(seq_ref)$exon_starts -1) %/% 3 + 1
     S4Vectors::metadata(seq_alt_p)$exon_starts <- (S4Vectors::metadata(seq_alt)$exon_starts -1) %/% 3 + 1

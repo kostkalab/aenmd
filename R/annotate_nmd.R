@@ -30,12 +30,15 @@ parse_vcf <- function(vcf_filename, pass_only = TRUE){
 #'            Each variant is of length 1.
 #'            Each variant has an ``ref`` and ``alt`` metadata column with DNAStrings of the sequences.
 #' @param check_ref Logical. Should the reference alleles be checked against assembly.
+#' @param verbose Logical. Report progress.
 #' @return List.
 #' @importFrom utils head tail
 #' @examples
 #' @export
-annotate_nmd <- function(vcf_rng, check_ref = TRUE){
-#===================================================
+annotate_nmd <- function(vcf_rng, check_ref = TRUE, verbose = FALSE){
+#====================================================================
+
+    if(verbose) message("Processing vcf file.")
 
     #- using GRCh38 only for now
     hsap <- BSgenome.Hsapiens.NCBI.GRCh38::Hsapiens
@@ -47,16 +50,17 @@ annotate_nmd <- function(vcf_rng, check_ref = TRUE){
 
     #- check if reference variants are legal
     if(check_ref){
+        if(verbose) message("Confirming reference alleles match assembly.")
         seqs <- BSgenome::getSeq(hsap, vcf_rng)
         if( ! all(as.character(seqs) == vcf_rng$ref) ){
-            stop("Refrence variants annoations don't all match assembly")
+            stop("Refrence variants annoations don't all match assembly.")
         }
     }
 
     #- filter out variants that overlap splice sites
     # FIXME: this filters too much, e.g. when (sets of) exons get deleted.
     #        -> filter only when fist/last nucleotide overlap splice region?
-
+    if(verbose) message("Filtering out splice variants.")
     ov       <- GenomicRanges::findOverlaps(vcf_rng,
                                             future::value(._EA_spl_grl))
     out_idx  <- sort(unique(S4Vectors::queryHits(ov)))
@@ -79,17 +83,19 @@ annotate_nmd <- function(vcf_rng, check_ref = TRUE){
     #- explode variants into variant/transcript pairs
     #  FIXME: we could make the transcript set more flexible...
     #         maybe pass it as a function arg, provide more than just tsl=1
+    if(verbose) message("Creating variant-transcript pairs.")
     ov                 <- GenomicRanges::findOverlaps(vcf_rng,
                                                       future::value(._EA_txs_grl))
     vcf_rng_by_tx      <- vcf_rng[S4Vectors::queryHits(ov)] #- 405,094
     vcf_rng_by_tx$enst <- names(future::value(._EA_txs_grl))[S4Vectors::subjectHits(ov)]
 
     #- actually annotate variants
-    ##res <- annotate_vars(vcf_rng_by_tx)
+    if(verbose) message("Annotating variant-trainscript pairs for NMD escape.")
     rr <- lapply(seq_len(length(vcf_rng_by_tx)), function(ind) annotate_variant(vcf_rng_by_tx[ind],vcf_rng_by_tx[ind]$enst ))
     rmat <- unlist(lapply(rr,function(x) x[[1]])) |> matrix(byrow=TRUE, ncol=6)
     colnames(rmat) <- rr[[1]]$rules |> names()
     vcf_rng_by_tx$rules <- rmat
 
+    if(verbose) message("Done.")
     return(vcf_rng_by_tx)
 }

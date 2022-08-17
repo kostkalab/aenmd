@@ -9,8 +9,8 @@
 
 .onLoad <- function(libname, pkgname) {
     #- load envs containing data we need
-    packageStartupMessage("--------------------------------")
-    packageStartupMessage("Package: aenmd /aɪ-iː-ɛn-ɛm-diː/")
+    packageStartupMessage("\n--------------------------------")
+    packageStartupMessage("Package: aenmd /e\u026A-i\u02D0-\u025Bn-\u025Bm-di\u02D0/")
     packageStartupMessage("(annotating escape from NMD)")
     packageStartupMessage("--------------------------------\n")
     prefix       <- system.file("extdata", package = "aenmd")

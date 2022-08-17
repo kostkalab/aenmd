@@ -13,6 +13,7 @@
 #'          *     ****
 #' @param gr1 GRanges object. Single range, no strand. The variant. Start is first nucleotide, end is last nucleotide.
 #' @param gr2 GRanges object. Exon ranges. All on the same strand. Sorted 5' to 3' (i.e., "reversed" on negative strand).
+#'            Both ``gr1`` and ``gr2`` need to be on the same chromosome.
 #' @return Numeric. Vector with start, end, and the overlapping exons.
 #' @examples
 #' gr1  <- GenomicRanges::GRanges('chr1:2-18:*')
@@ -23,6 +24,9 @@
 #' aenmd:::get_start_end(gr1,gr2) #- 2, 10, 1, 3
 get_start_end <- function(gr1, gr2){
 #====================================
+        if(!( (GenomicRanges::seqnames(gr1) == GenomicRanges::seqnames(gr2)) |> all())){
+            stop("chromosome mismatch; not supported.")
+        }
         GenomicRanges::strand(gr1) <- '*'
         if(all(as.character(GenomicRanges::strand(gr2)) == "+")){
                 strnd = '+'
@@ -37,7 +41,11 @@ get_start_end <- function(gr1, gr2){
         res        <- c(NA,NA)
         names(res) <- c("start","end")
 
-        gr1     <- GenomicRanges::intersect(gr1, gr2, ignore.strand = TRUE)
+        #gr1     <- GenomicRanges::intersect(gr1, gr2, ignore.strand = TRUE)
+        #- for some reason this is a lot faster (order of magnitude)
+        gr1     <- GenomicRanges::GRanges(GenomicRanges::seqnames(gr1),
+                                          IRanges::intersect( IRanges::IRanges(GenomicRanges::start(gr1),GenomicRanges::end(gr1)),
+                                                              IRanges::IRanges(GenomicRanges::start(gr2),GenomicRanges::end(gr2))))
         gr2_hit <- S4Vectors::subjectHits(GenomicRanges::findOverlaps(gr1, gr2))
 
         #- no overalp, we are done
