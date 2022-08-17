@@ -88,9 +88,14 @@ annotate_nmd <- function(vcf_rng, check_ref = TRUE, verbose = FALSE){
     #         maybe pass it as a function arg, provide more than just tsl=1
     if(verbose) message("Creating variant-transcript pairs.")
     ov                 <- GenomicRanges::findOverlaps(vcf_rng,
-                                                      future::value(._EA_txs_grl))
+                                                      future::value(._EA_exn_grl))
     vcf_rng_by_tx      <- vcf_rng[S4Vectors::queryHits(ov)] #- 405,094
-    vcf_rng_by_tx$enst <- names(future::value(._EA_txs_grl))[S4Vectors::subjectHits(ov)]
+    vcf_rng_by_tx$enst <- names(future::value(._EA_exn_grl))[S4Vectors::subjectHits(ov)]
+
+    if(length(vcf_rng_by_tx) == 0){
+        message("No transcript-overlapping variants.")
+        return(vcf_rng_by_tx)
+    }
 
     #- actually annotate variants
     if(verbose) message("Annotating variant-trainscript pairs for NMD escape.")

@@ -43,6 +43,8 @@ get_start_end <- function(gr1, gr2){
 
         #gr1     <- GenomicRanges::intersect(gr1, gr2, ignore.strand = TRUE)
         #- for some reason this is a lot faster (order of magnitude)
+        #  FIXME: this breaks currently if the intersection is empty.
+        #         not an issue b/c we filter for cds overlap before, but not robust.
         gr1     <- GenomicRanges::GRanges(GenomicRanges::seqnames(gr1),
                                           IRanges::intersect( IRanges::IRanges(GenomicRanges::start(gr1),GenomicRanges::end(gr1)),
                                                               IRanges::IRanges(GenomicRanges::start(gr2),GenomicRanges::end(gr2))))

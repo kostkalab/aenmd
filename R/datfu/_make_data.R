@@ -105,6 +105,7 @@ if(TRUE){
     saveRDS(cds_env,      file = "../../inst/extdata/env_ensdb_v105_seqs_byTx_fil.rds")
     saveRDS(splice_env,   file = "../../inst/extdata/env_ensdb_v105_splc_byTx_fil.rds")
     saveRDS(spl_rng_used, file = "../../inst/extdata/grl_ensdb_v105_splc_byTx_fil.rds")
+    saveRDS(exn_rng_used, file = "../../inst/extdata/grl_ensdb_v105_exns_byTx_fil.rds")
     saveRDS(txs_used,     file = "../../inst/extdata/grl_ensdb_v105_trnscrpts_fil.rds")
 }
 
