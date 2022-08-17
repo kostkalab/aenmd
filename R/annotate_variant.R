@@ -74,9 +74,16 @@ annotate_variant <- function(rng, tx){
         }
     }
 
+    #- single exon rule
+    is_single <- FALSE
+    if(length(S4Vectors::metadata(seq_alt_p)$exon_starts) == 1){
+        is_single <- TRUE
+    }
+
+
     #- last exon rule (TRUE if first PTC overlaps last exon)
     is_last <- FALSE
-    if(!is.na(fst_stop) & (length(S4Vectors::metadata(seq_alt_p)$exon_starts) > 1)){
+    if(!is.na(fst_stop) & (!is_single)){
         cnd1 <- fst_stop >=  ( S4Vectors::metadata(seq_alt_p)$exon_starts |> tail(n=1) )
         if(cnd1){
             is_last <- TRUE
@@ -86,11 +93,11 @@ annotate_variant <- function(rng, tx){
     #- penultimate exon rule (true if PTS overlaps last 50bp of penultimate exon)
     #- note that we use 17 AA, which is 51 bp and not 50
     is_penultimate <- FALSE
-    if(!is.na(fst_stop) & (length(S4Vectors::metadata(seq_alt_p)$exon_starts) > 1)){
+    if(!is.na(fst_stop) & (!is_single)){
 
         cnd1 <- fst_stop >=  (S4Vectors::metadata(seq_alt_p)$exon_starts |> tail(n=2))[1]
         cnd2 <- fst_stop <   (S4Vectors::metadata(seq_alt_p)$exon_starts |> tail(n=2))[2]
-        cnd3 <- (S4Vectors::metadata(seq_alt_p)$exon_starts |> tail(n=2))[2] - fst_stop <= 17
+        cnd3 <- (( (S4Vectors::metadata(seq_alt_p)$exon_starts |> tail(n=2))[2]) - fst_stop) <= 17
 
         if(cnd1 & cnd2 & cnd3){
             is_penultimate <- TRUE
@@ -99,23 +106,41 @@ annotate_variant <- function(rng, tx){
 
     #- first exon rule
     is_first <- FALSE
-    if(!is.na(fst_stop) & (length(S4Vectors::metadata(seq_alt_p)$exon_starts) > 1)){
-
+    if(!is.na(fst_stop) & (!is_single)){
+        #- We are in the first exon
         cnd1 <- fst_stop <  (S4Vectors::metadata(seq_alt_p)$exon_starts |> head(n=2))[2]
-
-        if(cnd1){
+        #-We are in the first 150 nucleotides (=50 AA) of the first exon
+        cnd2 <- fst_stop <= 50
+        if(cnd1 & cnd2){
             is_first <- TRUE
         }
     }
 
-    #- single exon rule
-    is_single <- FALSE
-    if(length(S4Vectors::metadata(seq_alt_p)$exon_starts) == 1){
-        is_single <- TRUE
+    #- 407 bp rule: if PTC is in large exon: escape.
+    #  we do 408bp or bigger
+    is_407plus <- FALSE
+    if(!is.na(fst_stop)){
+        #-exon starts
+        tmp_es <- S4Vectors::metadata(seq_alt_p)$exon_starts
+        if(is_single){
+            if(length(seq_alt_p) >= 136) is_407plus <- TRUE
+        } else {
+            #- start of overlapping exon and the next exon
+            strt_over    <- tmp_es[(tmp_es <= fst_stop) |> which() |> max()]
+            strt_next    <- NA
+            if(strt_over == max(tmp_es)){
+                strt_next <- length(seq_alt_p) + 1
+            } else {
+                strt_next <- tmp_es[(tmp_es >= fst_stop) |> which() |> min()]
+            }
+
+            sze    <- strt_next - strt_over
+            if(sze >= 136) is_407plus <- TRUE
+        }
     }
 
-    rule_res        <- c(is_ptc, is_last, is_penultimate, is_first, is_single)
-    names(rule_res) <- c("is_ptc","is_last", "is_penultimate", "is_first", "is_single")
+    rule_res        <- c(is_ptc, is_last, is_penultimate, is_first, is_single, is_407plus)
+    names(rule_res) <- c("is_ptc","is_last", "is_penultimate", "is_first", "is_single", "is_407plus")
 
     res <- list( rules   = rule_res,
                  seq_ref = seq_ref_p,

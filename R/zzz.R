@@ -9,9 +9,10 @@
 
 .onLoad <- function(libname, pkgname) {
     #- load envs containing data we need
-    packageStartupMessage("\nPackage aenmd: Annotating variants with escape from NMD")
-    packageStartupMessage("=======================================================\n")
-    packageStartupMessage("Loading ENSEMBL v. 105 annotations...")
+    packageStartupMessage("\nPackage aenmd /aɪ-iː-ɛn-ɛm-diː/")
+    packageStartupMessage("Annotating escape from NMD")
+    packageStartupMessage("==========================\n")
+    packageStartupMessage("Loading transcript annotation...")
     prefix       <- system.file("extdata", package = "aenmd")
     ._EA_exn_env <<- readRDS(paste0(prefix,'/','env_ensdb_v105_exns_byTx_fil.rds'))
     ._EA_cds_env <<- readRDS(paste0(prefix,'/','env_ensdb_v105_seqs_byTx_fil.rds'))

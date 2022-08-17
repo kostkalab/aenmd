@@ -58,7 +58,9 @@ annotate_nmd <- function(vcf_rng, check_ref = TRUE){
     #        -> filter only when fist/last nucleotide overlap splice region?
     ov       <- GenomicRanges::findOverlaps(vcf_rng, ._EA_spl_grl)
     out_idx  <- sort(unique(S4Vectors::queryHits(ov)))
-    vcf_rng  <- vcf_rng[-out_idx]
+    if(length(out_idx)>0){
+        vcf_rng  <- vcf_rng[-out_idx]
+    }
 
     #- Classify ins, del, sbs, assign key
     vcf_rng$type                                                                   <- NA
@@ -82,7 +84,7 @@ annotate_nmd <- function(vcf_rng, check_ref = TRUE){
     #- actually annotate variants
     ##res <- annotate_vars(vcf_rng_by_tx)
     rr <- lapply(seq_len(length(vcf_rng_by_tx)), function(ind) annotate_variant(vcf_rng_by_tx[ind],vcf_rng_by_tx[ind]$enst ))
-    rmat <- unlist(lapply(rr,function(x) x[[1]])) |> matrix(byrow=TRUE, ncol=5)
+    rmat <- unlist(lapply(rr,function(x) x[[1]])) |> matrix(byrow=TRUE, ncol=6)
     colnames(rmat) <- rr[[1]]$rules |> names()
     vcf_rng_by_tx$rules <- rmat
 
