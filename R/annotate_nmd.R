@@ -25,20 +25,19 @@ parse_vcf <- function(vcf_filename, pass_only = TRUE){
     return(vcf_rng)
 }
 
-#' Wrapper function for annotating a set of variants with NMD escape
+#' Filters / processes variants
 #' @param vcf_rng GRanges object of variants. Start is first base of variant.
 #'            Each variant is of length 1.
-#'            Each variant has an ``ref`` and ``alt`` metadata column with DNAStrings of the sequences.
+#'            Each variant has an ``ref`` and ``alt`` metadata column with DNAStringSets of the sequences.
 #' @param check_ref Logical. Should the reference alleles be checked against assembly.
 #' @param verbose Logical. Report progress.
 #' @return List.
 #' @importFrom utils head tail
 #' @examples
 #' @export
-annotate_nmd <- function(vcf_rng, check_ref = TRUE, verbose = FALSE){
-#====================================================================
+process_variants <- function(vcf_rng, check_ref = FALSE, verbose = TRUE){
 
-    if(verbose) message("Processing vcf file.")
+    if(verbose) message("Processing variants.")
 
     #- using GRCh38 only for now
     hsap <- BSgenome.Hsapiens.NCBI.GRCh38::Hsapiens
@@ -71,17 +70,38 @@ annotate_nmd <- function(vcf_rng, check_ref = TRUE, verbose = FALSE){
         vcf_rng  <- vcf_rng[-out_idx]
     }
 
-    #- Classify ins, del, sbs, assign key
+    #- Classify ins, del, sbs, assign key; snv for
     vcf_rng$type                                                                   <- NA
     vcf_rng$type[Biostrings::width(vcf_rng$ref) >  Biostrings::width(vcf_rng$alt)] <- 'del'
     vcf_rng$type[Biostrings::width(vcf_rng$ref) <  Biostrings::width(vcf_rng$alt)] <- 'ins'
     vcf_rng$type[Biostrings::width(vcf_rng$ref) == Biostrings::width(vcf_rng$alt)] <- 'sbs'
+    vcf_rng$type[(vcf_rng$type == 'sbs') & (Biostrings::width(vcf_rng$alt) == 1)]  <- 'snv'
     vcf_rng$key <- paste(as.character(vcf_rng),vcf_rng$ref,vcf_rng$alt,sep="|")
 
     #- check that we only have unique variants
     if( !(length(vcf_rng$key) == length(unique(vcf_rng$key))) ){
         stop("duplicated variants")
     }
+
+    return(vcf_rng)
+}
+
+#' Wrapper function for annotating a set of variants with NMD escape
+#' @param vcf_rng GRanges object of variants. Start is first base of variant.
+#'            Each variant is of length 1.
+#'            Each variant has an ``ref`` and ``alt`` metadata column with DNAStrings of the sequences.
+#' @param check_ref Logical. Should the reference alleles be checked against assembly.
+#' @param verbose Logical. Report progress.
+#' @return List.
+#' @importFrom utils head tail
+#' @examples
+#' @export
+annotate_nmd <- function(vcf_rng, check_ref = TRUE, verbose = FALSE){
+#====================================================================
+
+    if(verbose) message("Processing variants.")
+
+    vcf_rng <- process_variants(vcf_rng, check_ref, verbose)
 
     #- explode variants into variant/transcript pairs
     #  FIXME: we could make the transcript set more flexible...
