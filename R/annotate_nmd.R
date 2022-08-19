@@ -78,6 +78,23 @@ process_variants <- function(vcf_rng, check_ref = FALSE, verbose = TRUE){
     vcf_rng$type[(vcf_rng$type == 'sbs') & (Biostrings::width(vcf_rng$alt) == 1)]  <- 'snv'
     vcf_rng$key <- paste(as.character(vcf_rng),vcf_rng$ref,vcf_rng$alt,sep="|")
 
+    #- for snvs, only use "stop-making" snvs
+    if(verbose) message("Filtering out snvs that don't create stop codons.")
+    ind <- rep(FALSE, length(vcf_rng))
+    tps <- vcf_rng$type
+    kys <- vcf_rng$key
+    for(i in seq_len(length(vcf_rng))){
+        if(verbose) {
+            if(i %% 100 == 0) message("snv # ", i, "of ", length(kys))
+        }
+        if(tps[i] != 'snv'){
+            ind[i] <- TRUE
+        } else if(! is.null( future::value(._EA_snv_env)[[ kys[i] ]] ) ){
+            ind[i] <- TRUE
+        }
+    }
+    vcf_rng <- vcf_rng[ind]
+
     #- check that we only have unique variants
     if( !(length(vcf_rng$key) == length(unique(vcf_rng$key))) ){
         stop("duplicated variants")
