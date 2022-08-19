@@ -35,9 +35,22 @@ txs$num_exons <- elementNROWS(all_exn_rng)
 ind <- txs$tx_support_level == 1
 ind <- ind | ((txs$num_exons == 1) & (is.na(txs$tx_support_level)))
 
-txs_used     <- txs[ sort(which(ind)) , ]
+txs_used     <- txs[ sort(which(ind))  ]
 exn_rng_used <- all_exn_rng[names(txs_used)]
 cds_used     <- getSeq(Hsapiens, exn_rng_used)
+
+#- FILTER CDS must be divisible by three
+#- some of these sequences are sort of incomplete
+#  in this case the cds is not divisible by three.
+#  we will exclude these but keep track.
+out <- which(width(exn_rng_used) |> lapply(sum) |> unlist() %% 3 != 0) |> sort()
+# length(out)
+# 927
+write.table(names(out) |> sort(), file="./inst/extdata/enst_length_excluded.txt",
+            quote = FALSE, row.names = FALSE, col.names = FALSE)
+txs_used     <- txs_used[ -out  ]
+exn_rng_used <- exn_rng_used[ -out  ]
+cds_used     <- cds_used[ -out  ]
 
 #- annotate splice regions based on:
 #  3bp into the exon and 8bp into the intron;
@@ -67,10 +80,10 @@ names(spl_rng_used) <- names(txs_used)
 
 #- Could keep these for documentation puproses; don't need them for the package
 if(FALSE){
-    saveRDS(txs_used,         "../../../dat/renvs/ensdb_v105_txs-fil.rds") #- 31,506 ENSEMBL 105
-    saveRDS(exn_rng_used,     "../../../dat/renvs/ensdb_v105_exns-rng-fil.rds")
-    saveRDS(spl_rng_used,     "../../../dat/renvs/ensdb_v105_spl-rng-fil.rds")
-    saveRDS(cds_used,         "../../../dat/renvs/ensdb_v105_cds-fil.rds")
+    saveRDS(txs_used,         "../../dat/renvs/ensdb_v105_txs-fil.rds") #- 31,506 ENSEMBL 105
+    saveRDS(exn_rng_used,     "../../dat/renvs/ensdb_v105_exns-rng-fil.rds")
+    saveRDS(spl_rng_used,     "../../dat/renvs/ensdb_v105_spl-rng-fil.rds")
+    saveRDS(cds_used,         "../../dat/renvs/ensdb_v105_cds-fil.rds")
 }
 
 #- NOTE
@@ -95,22 +108,20 @@ for( i in seq_len(length(txs_used))){
         seq_ref_exns      <- cds_used[[txn]]
         seq_ref_c         <- unlist(seq_ref_exns)
         cds_env[[txn]]    <- seq_ref_c
-	spl               <- spl_rng_used[[txn]]
-	splice_env[[txn]] <- spl
+    	spl               <- spl_rng_used[[txn]]
+	    splice_env[[txn]] <- spl
 }
 
 #- we put the environments into inst/extdata
 if(TRUE){
-    saveRDS(exon_env,     file = "../../inst/extdata/env_ensdb_v105_exns_byTx_fil.rds")
-    saveRDS(cds_env,      file = "../../inst/extdata/env_ensdb_v105_seqs_byTx_fil.rds")
-    saveRDS(splice_env,   file = "../../inst/extdata/env_ensdb_v105_splc_byTx_fil.rds")
-    saveRDS(spl_rng_used, file = "../../inst/extdata/grl_ensdb_v105_splc_byTx_fil.rds")
-    saveRDS(exn_rng_used, file = "../../inst/extdata/grl_ensdb_v105_exns_byTx_fil.rds")
-    saveRDS(txs_used,     file = "../../inst/extdata/grl_ensdb_v105_trnscrpts_fil.rds")
+    saveRDS(exon_env,     file = "./inst/extdata/env_ensdb_v105_exns_byTx_fil.rds")
+    saveRDS(cds_env,      file = "./inst/extdata/env_ensdb_v105_seqs_byTx_fil.rds")
+    saveRDS(splice_env,   file = "./inst/extdata/env_ensdb_v105_splc_byTx_fil.rds")
+    saveRDS(spl_rng_used, file = "./inst/extdata/grl_ensdb_v105_splc_byTx_fil.rds")
+    saveRDS(exn_rng_used, file = "./inst/extdata/grl_ensdb_v105_exns_byTx_fil.rds")
+    saveRDS(txs_used,     file = "./inst/extdata/grl_ensdb_v105_trnscrpts_fil.rds")
 }
 
-#- BUT we also include them as package-internal data;; too slow.
-#- usethis::use_data(exon_env, cds_env, splice_env, internal = TRUE, compress = 'gzip')
 
 
 
