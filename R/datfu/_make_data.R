@@ -52,6 +52,9 @@ txs_used     <- txs_used[ -out  ]
 exn_rng_used <- exn_rng_used[ -out  ]
 cds_used     <- cds_used[ -out  ]
 
+#- TODO:
+#- FILTER CDS must have at least 3 codons (start, content, stop)
+
 #- annotate splice regions based on:
 #  3bp into the exon and 8bp into the intron;
 

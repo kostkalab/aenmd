@@ -1,12 +1,13 @@
 #- Load processed ENSEMBL annotation
 #-----------------------------------
 
-._EA_exn_env <- NULL
-._EA_cds_env <- NULL
-._EA_spl_env <- NULL
-._EA_spl_grl <- NULL
-._EA_exn_grl <- NULL
-._EA_txs_grl <- NULL
+._EA_exn_env <- NULL #- exons we use
+._EA_cds_env <- NULL #- cds sequences we use
+._EA_spl_env <- NULL #- splice regions we use
+._EA_spl_grl <- NULL #- splice regions we use as grl
+._EA_exn_grl <- NULL #- exons we use as grl
+._EA_txs_grl <- NULL #- transcripts we use as grl
+._EA_snv_env <- NULL #- SNVs that caust stop-gains in transcripts we use
 
 .onLoad <- function(libname, pkgname) {
     #- load envs containing data we need
@@ -21,5 +22,6 @@
     ._EA_spl_grl <<- future::future({readRDS(paste0(prefix,'/','grl_ensdb_v105_splc_byTx_fil.rds'))}, lazy = TRUE)
     ._EA_exn_grl <<- future::future({readRDS(paste0(prefix,'/','grl_ensdb_v105_exns_byTx_fil.rds'))}, lazy = TRUE)
     ._EA_txs_grl <<- future::future({readRDS(paste0(prefix,'/','grl_ensdb_v105_trnscrpts_fil.rds'))}, lazy = TRUE)
+    ._EA_snv_env <<- future::future({readRDS(paste0(prefix,'/','env_ensdb_v105_fil_all-stop-making-snvs.rds'))}, lazy = TRUE)
 }
 
