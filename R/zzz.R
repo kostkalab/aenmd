@@ -7,7 +7,8 @@
 ._EA_spl_grl <- NULL #- splice regions we use as grl
 ._EA_exn_grl <- NULL #- exons we use as grl
 ._EA_txs_grl <- NULL #- transcripts we use as grl
-._EA_snv_env <- NULL #- SNVs that caust stop-gains in transcripts we use
+#._EA_snv_env <- NULL #- SNVs that caust stop-gains in transcripts we use
+._EA_snv_tri <- NULL #- SNVs that caust stop-gains in transcripts we use
 
 .onLoad <- function(libname, pkgname) {
     #- load envs containing data we need
@@ -22,6 +23,12 @@
     ._EA_spl_grl <<- future::future({readRDS(paste0(prefix,'/','grl_ensdb_v105_splc_byTx_fil.rds'))}, lazy = TRUE)
     ._EA_exn_grl <<- future::future({readRDS(paste0(prefix,'/','grl_ensdb_v105_exns_byTx_fil.rds'))}, lazy = TRUE)
     ._EA_txs_grl <<- future::future({readRDS(paste0(prefix,'/','grl_ensdb_v105_trnscrpts_fil.rds'))}, lazy = TRUE)
-    ._EA_snv_env <<- future::future({readRDS(paste0(prefix,'/','env_ensdb_v105_fil_all-stop-making-snvs.rds'))}, lazy = TRUE)
+#    ._EA_snv_env <<- future::future({readRDS(paste0(prefix,'/','env_ensdb_v105_fil_all-stop-making-snvs.rds'))}, lazy = TRUE)
+    ._EA_snv_tri <<- future::future({
+        message("aenmd: Reading in PTC-generating SNVs")
+        m_keys <- readRDS(paste0(prefix,'/','tri-keys_ensdb_v105_fil_all-stop-making-snvs.rds'))
+        m_vals <- readRDS(paste0(prefix,'/','tri-vals_ensdb_v105_fil_all-stop-making-snvs.rds'))
+        m_trie <- triebeard::trie(keys = m_keys, values = m_vals)},
+        lazy = TRUE)
 }
 

@@ -80,19 +80,12 @@ process_variants <- function(vcf_rng, check_ref = FALSE, verbose = TRUE){
 
     #- for snvs, only use "stop-making" snvs
     if(verbose) message("Filtering out snvs that don't create stop codons.")
-    ind <- rep(FALSE, length(vcf_rng))
+    ind <- rep(TRUE, length(vcf_rng))
     tps <- vcf_rng$type
     kys <- vcf_rng$key
-    for(i in seq_len(length(vcf_rng))){
-        if(verbose) {
-            if(i %% 100 == 0) message("snv # ", i, "of ", length(kys))
-        }
-        if(tps[i] != 'snv'){
-            ind[i] <- TRUE
-        } else if(! is.null( future::value(._EA_snv_env)[[ kys[i] ]] ) ){
-            ind[i] <- TRUE
-        }
-    }
+    mtc <- triebeard::longest_match(future::value(._EA_snv_tri), kys)
+    #- exclude SNVs that do not generate stop codons
+    ind[ (is.na(mtc)) & (vcf_rng$type == 'snv') ] <- FALSE
     vcf_rng <- vcf_rng[ind]
 
     #- check that we only have unique variants
@@ -129,12 +122,14 @@ annotate_nmd <- function(vcf_rng, check_ref = TRUE, verbose = FALSE){
     vcf_rng_by_tx      <- vcf_rng[S4Vectors::queryHits(ov)] #- 405,094
     vcf_rng_by_tx$enst <- names(future::value(._EA_exn_grl))[S4Vectors::subjectHits(ov)]
 
+    #- TODO: why is this still getting vars? Should be in process_variant already...
     if(length(vcf_rng_by_tx) == 0){
         message("No transcript-overlapping variants.")
         return(vcf_rng_by_tx)
     }
 
     #- actually annotate variants
+    #- TODO: add parallel capability.
     if(verbose) message("Annotating variant-trainscript pairs for NMD escape.")
     rr <- lapply(seq_len(length(vcf_rng_by_tx)), function(ind) annotate_variant(vcf_rng_by_tx[ind],vcf_rng_by_tx[ind]$enst ))
     rmat <- unlist(lapply(rr,function(x) x[[1]])) |> matrix(byrow=TRUE, ncol=6)

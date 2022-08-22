@@ -158,6 +158,23 @@ saveRDS(snv_ptc_env, file="./inst/extdata/env_ensdb_v105_fil_all-stop-making-snv
 
 #- TODO: add rule annotation here; then we can have a for each variant with ENST and names and rules as values.
 
+#- using a trie is actually better;
+m_keys <- ls(envir = snv_ptc_env)
+m_vals <- rep(TRUE, length(m_keys))
+m_trie <- triebeard::trie(keys = m_keys, values = m_vals)
+microbenchmark::microbenchmark(A = longest_match(trie = m_trie,
+                                                 to_match = m_keys[1:5000]),
+                               B = mget(m_keys[1:5000], envir = snv_ptc_env))
+#Unit: milliseconds
+#expr       min        lq      mean    median       uq       max neval
+#A  1.382485  1.452865  1.655035  1.723216  1.81546  1.975212   100
+#B 42.101637 42.461321 43.208749 42.705315 43.17668 55.384089   100
 
-
-
+#- since triebeard does not have serialize, we'll do it by hand:
+#  we save:
+saveRDS(m_keys, file="./inst/extdata/tri-keys_ensdb_v105_fil_all-stop-making-snvs.rds")
+saveRDS(m_vals, file="./inst/extdata/tri-vals_ensdb_v105_fil_all-stop-making-snvs.rds")
+#  and read in by hand:
+m_keys <- readRDS(file="./inst/extdata/tri-keys_ensdb_v105_fil_all-stop-making-snvs.rds")
+m_vals <- readRDS(file="./inst/extdata/tri-vals_ensdb_v105_fil_all-stop-making-snvs.rds")
+m_trie <- triebeard::trie(keys = m_keys, values = m_vals)
