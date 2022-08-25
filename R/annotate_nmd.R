@@ -111,7 +111,7 @@ annotate_nmd <- function(vcf_rng, check_ref = TRUE, verbose = FALSE){
 
     if(verbose) message("Processing variants.")
 
-    vcf_rng <- process_variants(vcf_rng, check_ref, verbose)
+    #vcf_rng <- process_variants(vcf_rng, check_ref, verbose)
 
     #- explode variants into variant/transcript pairs
     #  FIXME: we could make the transcript set more flexible...
