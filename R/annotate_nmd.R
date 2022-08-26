@@ -76,7 +76,9 @@ process_variants <- function(vcf_rng, check_ref = FALSE, verbose = TRUE){
     vcf_rng$type[Biostrings::width(vcf_rng$ref) <  Biostrings::width(vcf_rng$alt)] <- 'ins'
     vcf_rng$type[Biostrings::width(vcf_rng$ref) == Biostrings::width(vcf_rng$alt)] <- 'sbs'
     vcf_rng$type[(vcf_rng$type == 'sbs') & (Biostrings::width(vcf_rng$alt) == 1)]  <- 'snv'
-    vcf_rng$key <- paste(as.character(vcf_rng),vcf_rng$ref,vcf_rng$alt,sep="|")
+
+    starts <- GenomicRanges::start(vcf_rng) |> stringr::str_pad(9L, pad="0")
+    vcf_rng$key <- paste0(GenomicRanges::seqnames(vcf_rng), ":", starts,"|" ,vcf_rng$ref, "|", vcf_rng$alt)
 
     #- for snvs, only use "stop-making" snvs
     if(verbose) message("Filtering out snvs that don't create stop codons.")
