@@ -149,3 +149,226 @@ annotate_variant <- function(rng, tx){
     return(res)
 }
 
+#' Determine NMD escape rules
+#'
+#' @param ptc_loc Integer. Location of PTC. In CDS codon coordinates, 1-based.
+#' @param exn_ind Integer. Index of the exon the variant overlaps, 1-based.
+#' @param exn_sta Integer. Start of the exon. In CDS codon coordinates, 1-based.
+#' @param exn_end Integer. End of the exon. In CDS codon coordinates, 1-based.
+#' @param num_exn Integer. Number of exons in transcript.
+get_rules <- function(ptc_loc, exn_ind, exn_sta, exn_end, num_exn){
+    #------------------------------------------------------------------
+
+    res <- rep(FALSE, 6)
+    names(res) <- c("is_ptc","is_last", "is_penultimate", "is_first", "is_single", "is_407plus")
+
+    #- didnt' get a PTC
+    #------------------
+    if(is.na(ptc_loc) | is.null(ptc_loc)) return(res)
+    res["is_ptc"] <- TRUE
+
+    #- are we in the first 150 bp of the first exon?
+    if( (exn_ind ==1) & (ptc_loc <= 50) )  res["is_first"] <- TRUE
+
+    #- are we in the last exon?
+    if(exn_ind == num_exn) res["is_last"] <- TRUE
+
+    #- are we in a single exon transcrtipt
+    if(num_exn == 1) res["is_single"] <- TRUE
+
+    #- the exon longer than 407bp?
+    if( (exn_end - exn_sta) >= 136 ) res["is_407plus"] <- TRUE
+
+    #- are we in (the last 51bp of) the penultimate exon?
+    cnd1 <- exn_ind == (num_exn-1)
+    cnd2 <- (exn_end - ptc_loc) <= 17
+    if( cnd1 & cnd2) res["is_penultimate"] <- TRUE
+
+    return(res)
+}
+
+#' Annotate variants overlapping a transcript
+#'
+#' @param txname Character. Transcript name.
+#' @param vars GRanges. Overlapping variants.
+#' @param detailed Logical. Should additional information be returned.
+#' @return GRanges.
+annotate_variants_by_tx <- function( txname, vars, detailed = FALSE){
+#====================================================================
+
+    #- get CDS and exons for the transcript
+    if( is.null( seq <- get0(txname, future::value(._EA_cds_env)) )){
+        return(NULL)
+    }
+    if( is.null( exn <- get0(txname, future::value(._EA_exn_env)) )){
+        return(NULL)
+    }
+
+    #- find exon for each variant
+    #- up till now: only one exon per variant
+    #. i.e., multiple exon spanning variants are discarded.
+    ov <- GenomicRanges::findOverlaps(vars,exn)
+    qH <- S4Vectors::queryHits(ov)
+    sH <- S4Vectors::subjectHits(ov)
+    if( (qH |> max() |> table()) > 1) stop("multiple-exon variants are not supported.")
+    #- we can now look up for each variant its exon
+    sHm        <- sH
+    names(sHm) <- qH
+
+    #-exon starts and ends (genome, "transcript", protein) for reference
+    #- note: we could pre-caclulate that if it turns out slow, but unlikely.
+    exn_sta_g <- GenomicRanges::start(exn)
+    exn_end_g <- GenomicRanges::end(exn)
+    exn_sta_t <- c(1, cumsum(GenomicRanges::width(exn))[-length(exn)]+1)
+    exn_end_t <- cumsum(GenomicRanges::width(exn))
+    exn_sta_p <- (exn_sta_t -1) %/% 3 + 1
+    exn_end_p <- (exn_end_t -1) %/% 3 + 1
+    #- which nucleotide in codon: 1, 2 or 3
+    exn_sta_p_nc <- (exn_sta_t -1) %% 3 + 1
+    exn_end_p_nc <- (exn_end_t -1) %% 3 + 1
+
+    #------
+    #- SNVs
+    #------
+    #- All SNVs are PTC-generating (others have been filtered out)
+    #- Exon boundaries don't change.
+    evr_ind_snvs <- (vars$type == "snv") |> which()
+    exn_ind_snvs <- sHm[evr_ind_snvs |> as.character()]
+    #- get the codons
+    if(all(GenomicRanges::strand(exn)=="-")){
+        #- index of codon in "current" exon
+        cdn_ind_curr <- ( exn_end_g[exn_ind_snvs] - GenomicRanges::start(vars[evr_ind_snvs]) +
+                              exn_sta_p_nc[exn_ind_snvs] -1 ) %/% 3 + 1
+        cdn_ind      <- cdn_ind_curr + exn_sta_p[exn_ind_snvs] - 1
+    } else{
+        cdn_ind_curr <- ( GenomicRanges::start(vars[evr_ind_snvs]) - exn_sta_g[exn_ind_snvs] +
+                              exn_sta_p_nc[exn_ind_snvs] -1 ) %/% 3 + 1
+        cdn_ind      <- cdn_ind_curr + exn_sta_p[exn_ind_snvs] - 1
+    }
+
+    tbl_snv <- purrr::pmap_dfr( list( ptc_loc = cdn_ind_curr,
+                                      exn_ind = exn_ind_snvs,
+                                      exn_sta = exn_sta_p[exn_ind_snvs],
+                                      exn_end = exn_end_p[exn_ind_snvs],
+                                      num_exn = length(exn_sta_p)),
+                                get_rules)
+
+    if(detailed){
+        tbl_snv <- tbl_snv |> dplyr::mutate(#exon_index = exn_ind_snvs,
+            ptc_position_alt_p = cdn_ind,
+            tx_id = exn$tx_id[exn_ind_snvs],
+            exn_id = exn$exon_id[exn_ind_snvs])
+    }
+
+    #------------------------
+    #- INSERTIONS / DELETIONS
+    #------------------------
+    #- Here we need to make the new protein to find the PTC position
+    #  (that's only strictly true for insertions, but okay)
+
+    evr_ind_idl <- (vars$type != 'snv') |> which()
+    exn_ind_idl <- sHm[evr_ind_idl |> as.character()]
+
+    #- get the alternative version of the DNA sequence for each variant
+    #------------------------------------------------------------------
+    seq_ref <- future::value(._EA_cds_env)[[txname]]
+
+    #- need to map the genomic variants to the reference protein (CDS/nuc) coordinates
+    if(all(GenomicRanges::strand(exn)=="-")){
+        ref_nuc_sta <- exn_end_g[exn_ind_idl] - GenomicRanges::end(vars[evr_ind_idl])     + exn_sta_t[exn_ind_idl]
+        ref_nuc_end <- exn_end_g[exn_ind_idl] - GenomicRanges::start(vars[evr_ind_idl])   + exn_sta_t[exn_ind_idl]
+
+    } else{
+        ref_nuc_sta <- GenomicRanges::start(vars[evr_ind_idl]) - exn_sta_g[exn_ind_idl] + exn_sta_t[exn_ind_idl]
+        ref_nuc_end <- GenomicRanges::end(vars[evr_ind_idl])   - exn_sta_g[exn_ind_idl] + exn_sta_t[exn_ind_idl]
+    }
+
+    ind_out     <- (ref_nuc_sta <= 3) #- those overlap the start codon (but not splice regions)
+    evr_ind_idl <- evr_ind_idl[!ind_out]
+    exn_ind_idl <- sHm[evr_ind_idl |> as.character()]
+    ref_nuc_sta <- ref_nuc_sta[!ind_out]
+    ref_nuc_end <- ref_nuc_end[!ind_out]
+
+    alt_vrs <- vars$alt[evr_ind_idl]
+    if(all(GenomicRanges::strand(exn)=="-")) alt_vrs <- Biostrings::reverseComplement(alt_vrs)
+    make_alt <- function(ref_nuc_sta, ref_nuc_end, alt, seq_ref){
+        Biostrings::xscat(Biostrings::subseq(seq_ref, 1, ref_nuc_sta -1), alt,
+                          Biostrings::subseq(seq_ref, ref_nuc_end +1, length(seq_ref)))[[1]]
+    }
+
+    seq_alt <- sapply(seq_len(length(evr_ind_idl)),
+                      function(ind) make_alt(ref_nuc_sta = ref_nuc_sta[ind],
+                                             ref_nuc_end[ind],
+                                             alt_vrs[ind],
+                                             seq_ref) )
+
+    seq_alt_p <- seq_alt |> Biostrings::DNAStringSet() |> Biostrings::translate() |> suppressWarnings()
+
+    #- now we can look for stop codons
+    #---------------------------------
+    stop_pos  <- Biostrings::vmatchPattern("*",seq_alt_p)
+    stop_pos  <- lapply(stop_pos, function(x) {
+        if(length(x) == 0) {
+            fst_stop <- NA
+        } else {
+            fst_stop <- x[1] |> Biostrings::start() |> as.integer()
+        }
+    }) |> unlist()
+
+    #- ptc does not contain "original" stop codon.
+    #  the corner cases here that we miss contain indels affecting the
+    #  last reference codon
+    ptc_pos <- stop_pos
+    ptc_pos[stop_pos == Biostrings::width(seq_alt_p)] <- NA
+
+    #- update exon boundaries and apply rules
+    #----------------------------------------
+    #- now we need the updated exon boundaries in CDS/codon coordinates.
+    #  since all variants are contained in one exon, we just need to update that.
+
+    d_w <- vars[evr_ind_idl]$alt |> Biostrings::width() -
+        vars[evr_ind_idl]$ref |> Biostrings::width()
+
+    afu <- function(ptc_pos, exn_ind, d_w, num_exn){
+        #-----------------------------------------------
+        #- if ptc_pos is NA we return FALSE
+        if(is.na(ptc_pos)){
+            res <- rep(FALSE, 6)
+            names(res) <- c("is_ptc","is_last", "is_penultimate", "is_first", "is_single", "is_407plus")
+            return(res)
+        }
+        #- need to make new exon boundaries (in cds/codon space)
+        exn_sta_p_alt <- exn_sta_p
+        exn_end_p_alt <- exn_end_p
+        inds          <- exn_ind : length(exn)
+        delt          <- (d_w + (exn_end_p_nc[inds] %% 3) ) %/% 3
+
+        exn_sta_p_alt[inds[-1]] <- exn_sta_p_alt[inds[-1]] + delt[-1]
+        exn_end_p_alt[inds]     <- exn_end_p_alt[inds]     + delt
+
+        #- find the exon that contains the PTC (not necessarily the variant)
+        exn_ind_ptc <- (exn_sta_p_alt <= ptc_pos) |> which() |> max()
+        #- location of ptc in that exon
+        ptc_loc <- ptc_pos - exn_sta_p[exn_ind_ptc] + 1
+        get_rules(ptc_loc, exn_ind_ptc, exn_sta_p_alt[exn_ind_ptc],
+                  exn_end_p_alt[exn_ind_ptc], num_exn)
+    }
+
+    tbl_idl <- purrr::pmap_dfr( list( ptc_pos = ptc_pos,
+                                      exn_ind = exn_ind_idl,
+                                      d_w     = d_w,
+                                      num_exn = length(exn_sta_p)),
+                                afu)
+
+    if(detailed){
+        tbl_idl <- tbl_idl |> dplyr::mutate(
+            ptc_position_alt_p = stop_pos,
+            tx_id = exn$tx_id[exn_ind_idl],
+            exn_id = exn$exon_id[exn_ind_idl]) #- this is not the ptc exon but the variant exon
+    }
+
+    res <- vars[c(evr_ind_snvs, evr_ind_idl)]
+    dfr <- rbind(tbl_snv,tbl_idl) |> S4Vectors::DataFrame()
+    S4Vectors::mcols(res)$res_aenmd <- dfr
+    return(res)
+}
