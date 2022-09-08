@@ -292,8 +292,13 @@ annotate_variants_by_tx <- function( txname, vars, detailed = FALSE){
     alt_vrs <- vars$alt[evr_ind_idl]
     if(all(GenomicRanges::strand(exn)=="-")) alt_vrs <- Biostrings::reverseComplement(alt_vrs)
     make_alt <- function(ref_nuc_sta, ref_nuc_end, alt, seq_ref){
-        Biostrings::xscat(Biostrings::subseq(seq_ref, 1, ref_nuc_sta -1), alt,
+        if(ref_nuc_sta < length(seq_ref)) {
+            Biostrings::xscat(Biostrings::subseq(seq_ref, 1, ref_nuc_sta -1), alt,
                           Biostrings::subseq(seq_ref, ref_nuc_end +1, length(seq_ref)))[[1]]
+        } else {
+            Biostrings::xscat(Biostrings::subseq(seq_ref, 1, ref_nuc_sta -1), alt)[[1]]
+
+        }
     }
 
     seq_alt <- sapply(seq_len(length(evr_ind_idl)),
