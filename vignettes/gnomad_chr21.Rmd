@@ -17,7 +17,7 @@ knitr::opts_chunk$set(
 
 ## Download and parse gnomad chromosome 21
 
-```{r read_data}
+```{r read_data, message=FALSE}
 library(aenmd)
 library(BiocFileCache)
 
@@ -40,7 +40,8 @@ Finally, we annotate these variants for escape from NMD.
 
 ```{r, annotate_variants}
 tictoc::tic()
-res <- annotate_nmd_v2(vcf_rng)
+#- remove the substetting below for complete chr21
+res <- annotate_nmd_v2(vcf_rng[1:50])
 tictoc::toc()
 res |> print()
 ```
