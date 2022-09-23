@@ -17,7 +17,7 @@ knitr::opts_chunk$set(
 
 ## Download and parse gnomad chromosome 21
 
-```{r read_data, message=FALSE}
+```{r read_data, message=FALSE, eval=TRUE}
 library(aenmd)
 library(BiocFileCache)
 
@@ -32,24 +32,24 @@ Next we process variants, focusing keeping only those that
 * Are contained in at least one exon
 * If the variants are SNVs, they do create a PTC
 
-```{r, process_data}
+```{r, process_data, eval=TRUE}
 vcf_rng <- process_variants(vcf_rng, check_ref = TRUE, verbose = TRUE)
 vcf_rng |> print()
 ```
 Finally, we annotate these variants for escape from NMD.
 
-```{r, annotate_variants}
-tictoc::tic()
+```{r, annotate_variants, eval=TRUE}
+#tictoc::tic()
 #- remove the substetting below for complete chr21
 res <- annotate_nmd_v2(vcf_rng[1:50])
-tictoc::toc()
+#tictoc::toc()
 res |> print()
 ```
 ...and we can focus on NMD-escaping variants:
 * we find 2,369 NMD-escaping variants on chr21 in gnomad
 * the minority (1,065) are SNVs
 
-```{r, focus}
+```{r, focus, eval= FALSE}
 ind <- S4Vectors::mcols(res)$res_aenmd[,"is_ptc"] & (rowSums(S4Vectors::mcols(res)$res_aenmd |> as.matrix()) >1 ) 
 res[ind]
 table(res[ind]$type)
