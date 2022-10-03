@@ -246,7 +246,7 @@ annotate_variants_by_tx <- function( txname, vars, detailed = FALSE){
         cdn_ind      <- cdn_ind_curr + exn_sta_p[exn_ind_snvs] - 1
     }
 
-    tbl_snv <- purrr::pmap_dfr( list( ptc_loc = cdn_ind_curr,
+    tbl_snv <- purrr::pmap_dfr( list( ptc_loc = cdn_ind,
                                       exn_ind = exn_ind_snvs,
                                       exn_sta = exn_sta_p[exn_ind_snvs],
                                       exn_end = exn_end_p[exn_ind_snvs],
@@ -354,8 +354,8 @@ annotate_variants_by_tx <- function( txname, vars, detailed = FALSE){
         #- find the exon that contains the PTC (not necessarily the variant)
         exn_ind_ptc <- (exn_sta_p_alt <= ptc_pos) |> which() |> max()
         #- location of ptc in that exon
-        ptc_loc <- ptc_pos - exn_sta_p[exn_ind_ptc] + 1
-        get_rules(ptc_loc, exn_ind_ptc, exn_sta_p_alt[exn_ind_ptc],
+        #ptc_loc <- ptc_pos - exn_sta_p[exn_ind_ptc] + 1
+        get_rules(ptc_pos, exn_ind_ptc, exn_sta_p_alt[exn_ind_ptc],
                   exn_end_p_alt[exn_ind_ptc], num_exn)
     }
 
