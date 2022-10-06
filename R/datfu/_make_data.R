@@ -26,14 +26,20 @@ txs <- ensembldb::transcripts(edb, filter = FilterList,
                                columns = c( "tx_id_version","gene_id", "tx_support_level", "tx_is_canonical"))
 
 #- corresponding exon ranges
-all_exn_rng   <- ensembldb::cdsBy(edb, "tx", filter = TxIdFilter(names(txs)));
-txs           <- txs[names(all_exn_rng),]
-txs$num_exons <- elementNROWS(all_exn_rng)
+all_exn_rng        <- ensembldb::cdsBy(edb, "tx", filter = TxIdFilter(names(txs)))   #- cds only
+all_tx_exn_rng     <- ensembldb::exonsBy(edb, "tx", filter = TxIdFilter(names(txs))) #- whole transcript
+#- these are exactly the same transcripts
+if(! all(names(all_exn_rng) == names(all_tx_exn_rng)) ) stop("Transcripts naming issue")
+txs                <- txs[names(all_exn_rng),]
+txs$num_exons_cds  <- elementNROWS(all_exn_rng)
+txs$num_exons_txs  <- elementNROWS(all_tx_exn_rng)
+#- sanity check
+if(! all(txs$num_exons_cds <= txs$num_exons_txs) ) stop("Transcripts error counting issue")
 
 #- tsl 1 transcripts plus
 #- recover 1-exon transcripts withou transcript support level info
 ind <- txs$tx_support_level == 1
-ind <- ind | ((txs$num_exons == 1) & (is.na(txs$tx_support_level)))
+ind <- ind | ((txs$num_exons_txs == 1) & (is.na(txs$tx_support_level)))
 
 txs_used     <- txs[ sort(which(ind))  ]
 exn_rng_used <- all_exn_rng[names(txs_used)]
