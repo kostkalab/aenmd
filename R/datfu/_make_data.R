@@ -20,7 +20,7 @@ edb  <- ah[[AH_VERSION]]
 #------------------------
 
 #- all protein-coding txs on standard chromosomes
-FilterList <- list(     SeqNameFilter(as.character(1:22,"X","Y","MT")),
+FilterList <- list(     SeqNameFilter(as.character(c(1:22,"X","Y","MT"))),
                         TxBiotypeFilter("protein_coding"))
 txs <- ensembldb::transcripts(edb, filter = FilterList,
                                columns = c( "tx_id_version","gene_id", "tx_support_level", "tx_is_canonical"))
@@ -46,7 +46,7 @@ cds_used     <- getSeq(Hsapiens, exn_rng_used)
 out <- which(width(exn_rng_used) |> lapply(sum) |> unlist() %% 3 != 0) |> sort()
 # length(out)
 # 927
-write.table(names(out) |> sort(), file="./inst/extdata/enst_length_excluded.txt",
+write.table(names(out) |> sort(), file="../../inst/extdata/enst_length_excluded.txt",
             quote = FALSE, row.names = FALSE, col.names = FALSE)
 txs_used     <- txs_used[ -out  ]
 exn_rng_used <- exn_rng_used[ -out  ]
@@ -117,12 +117,12 @@ for( i in seq_len(length(txs_used))){
 
 #- we put the environments into inst/extdata
 if(TRUE){
-    saveRDS(exon_env,     file = "./inst/extdata/env_ensdb_v105_exns_byTx_fil.rds")
-    saveRDS(cds_env,      file = "./inst/extdata/env_ensdb_v105_seqs_byTx_fil.rds")
-    saveRDS(splice_env,   file = "./inst/extdata/env_ensdb_v105_splc_byTx_fil.rds")
-    saveRDS(spl_rng_used, file = "./inst/extdata/grl_ensdb_v105_splc_byTx_fil.rds")
-    saveRDS(exn_rng_used, file = "./inst/extdata/grl_ensdb_v105_exns_byTx_fil.rds")
-    saveRDS(txs_used,     file = "./inst/extdata/grl_ensdb_v105_trnscrpts_fil.rds")
+    saveRDS(exon_env,     file = "../../inst/extdata/env_ensdb_v105_exns_byTx_fil.rds")
+    saveRDS(cds_env,      file = "../../inst/extdata/env_ensdb_v105_seqs_byTx_fil.rds")
+    saveRDS(splice_env,   file = "../../inst/extdata/env_ensdb_v105_splc_byTx_fil.rds")
+    saveRDS(spl_rng_used, file = "../../inst/extdata/grl_ensdb_v105_splc_byTx_fil.rds")
+    saveRDS(exn_rng_used, file = "../../inst/extdata/grl_ensdb_v105_exns_byTx_fil.rds")
+    saveRDS(txs_used,     file = "../../inst/extdata/grl_ensdb_v105_trnscrpts_fil.rds")
 }
 
 
