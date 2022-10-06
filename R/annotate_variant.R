@@ -161,8 +161,8 @@ annotate_variant <- function(rng, tx){
 #' Return value (Logical vector) has six named elements.
 #' - \code{is_ptc = TRUE} if there is a PTC in the alternative transcript. 
 #' - \code{is_last = TRUE} if the PTC is in the last (3'-most) coding exon.
-#' - \code{is_penultimate = TRUE} if the PTC is in the last 50bp of the penultimate exon.
-#' - \code{is_first = TRUE} if the PTC is in the first (5'-most) 150bp of the first (coding) exon.
+#' - \code{is_penultimate = TRUE} if the PTC is within the last 50bp of the penultimate exon.
+#' - \code{is_cssProximal  = TRUE} if the PTC is within the first (5'-most) 150bp of the translation/coding start site. 
 #' - \code{is_single = TRUE} if the PTC is in a single exon transcript.
 #' - \code{is_407plus = TRUE} if the PTC is in an exon that is longer than 407bp.
 
@@ -170,7 +170,7 @@ get_rules <- function(ptc_loc, exn_ind, exn_sta, exn_end, num_exn){
     #------------------------------------------------------------------
 
     res <- rep(FALSE, 6)
-    names(res) <- c("is_ptc","is_last", "is_penultimate", "is_first", "is_single", "is_407plus")
+    names(res) <- c("is_ptc","is_last", "is_penultimate", "is_cssProximal", "is_single", "is_407plus")
 
     #- didnt' get a PTC
     #------------------
@@ -178,7 +178,7 @@ get_rules <- function(ptc_loc, exn_ind, exn_sta, exn_end, num_exn){
     res["is_ptc"] <- TRUE
 
     #- are we in the first 150 bp of the first exon?
-    if( (exn_ind ==1) & (ptc_loc <= 50) )  res["is_first"] <- TRUE
+    if( ptc_loc <= 50 )  res["is_cssProximal"] <- TRUE
 
     #- are we in the last exon?
     if(exn_ind == num_exn) res["is_last"] <- TRUE
