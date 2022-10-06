@@ -17,6 +17,18 @@ get_rules(ptc_loc, exn_ind, exn_sta, exn_end, num_exn)
 
 \item{num_exn}{Integer. Number of exons in transcript.}
 }
+\value{
+Logical. Vogical vector with six named elements.
+}
 \description{
 Determine NMD escape rules
+}
+\details{
+Return value (Logical vector) has six named elements.
+- \code{is_ptc = TRUE} if there is a PTC in the alternative transcript. 
+- \code{is_last = TRUE} if the PTC is in the last (3'-most) coding exon.
+- \code{is_penultimate = TRUE} if the PTC is in the last 50bp of the penultimate exon.
+- \code{is_first = TRUE} if the PTC is in the first (5'-most) 150bp of the first (coding) exon.
+- \code{is_single = TRUE} if the PTC is in a single exon transcript.
+- \code{is_407plus = TRUE} if the PTC is in an exon that is longer than 407bp.
 }
