@@ -155,7 +155,8 @@ annotate_variant <- function(rng, tx){
 #' @param exn_ind Integer. Index of the exon the variant overlaps, 1-based.
 #' @param exn_sta Integer. Start of the exon. In CDS codon coordinates, 1-based.
 #' @param exn_end Integer. End of the exon. In CDS codon coordinates, 1-based.
-#' @param num_exn Integer. Number of exons in transcript.
+#' @param num_exn Integer. Number of exons in the CDS of the transcript.
+#' @param txname  Character. Ensembl transcript id. 
 #' @return Logical. Vogical vector with six named elements.
 #' @details 
 #' Return value (Logical vector) has six named elements.
@@ -166,8 +167,8 @@ annotate_variant <- function(rng, tx){
 #' - \code{is_single = TRUE} if the PTC is in a single exon transcript.
 #' - \code{is_407plus = TRUE} if the PTC is in an exon that is longer than 407bp.
 
-get_rules <- function(ptc_loc, exn_ind, exn_sta, exn_end, num_exn){
-    #------------------------------------------------------------------
+get_rules <- function(ptc_loc, exn_ind, exn_sta, exn_end, num_exn, txname){
+    #----------------------------------------------------------------------
 
     res <- rep(FALSE, 6)
     names(res) <- c("is_ptc","is_last", "is_penultimate", "is_cssProximal", "is_single", "is_407plus")
@@ -180,11 +181,12 @@ get_rules <- function(ptc_loc, exn_ind, exn_sta, exn_end, num_exn){
     #- are we in the first 150 bp of the first exon?
     if( ptc_loc <= 50 )  res["is_cssProximal"] <- TRUE
 
-    #- are we in the last exon?
+    #- are we in the last (coding!) exon?
     if(exn_ind == num_exn) res["is_last"] <- TRUE
 
     #- are we in a single exon transcrtipt
-    if(num_exn == 1) res["is_single"] <- TRUE
+    #- need to use ._EA_set_env b/c num_exn only counts the coding exons, here we need all
+    if( exists(txname, where = future::value(._EA_set_env)) ) res["is_single"] <- TRUE
 
     #- the exon longer than 407bp?
     if( (exn_end - exn_sta) >= 136 ) res["is_407plus"] <- TRUE

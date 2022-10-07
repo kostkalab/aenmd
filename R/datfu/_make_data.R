@@ -41,7 +41,7 @@ if(! all(txs$num_exons_cds <= txs$num_exons_txs) ) stop("Transcripts error count
 ind <- txs$tx_support_level == 1
 ind <- ind | ((txs$num_exons_txs == 1) & (is.na(txs$tx_support_level)))
 
-txs_used     <- txs[ sort(which(ind))  ]
+txs_used     <- txs[sort(which(ind))]
 exn_rng_used <- all_exn_rng[names(txs_used)]
 cds_used     <- getSeq(Hsapiens, exn_rng_used)
 
@@ -107,6 +107,7 @@ if(FALSE){
 exon_env   <- new.env(hash=TRUE, parent = emptyenv())
 cds_env    <- new.env(hash=TRUE, parent = emptyenv())
 splice_env <- new.env(hash=TRUE, parent = emptyenv())
+set_env    <- new.env(hash=TRUE, parent = emptyenv()) #- list of single exon transcripts
 
 #- Fill envs with content
 for( i in seq_len(length(txs_used))){
@@ -118,7 +119,10 @@ for( i in seq_len(length(txs_used))){
         seq_ref_c         <- unlist(seq_ref_exns)
         cds_env[[txn]]    <- seq_ref_c
     	spl               <- spl_rng_used[[txn]]
-	    splice_env[[txn]] <- spl
+	splice_env[[txn]] <- spl
+	if(txs_used$num_exons_txs[i] == 1){
+		set_env[[txn]] <- TRUE #- true 1-exon transcripts
+	}
 }
 
 #- we put the environments into inst/extdata
@@ -126,6 +130,7 @@ if(TRUE){
     saveRDS(exon_env,     file = "../../inst/extdata/env_ensdb_v105_exns_byTx_fil.rds")
     saveRDS(cds_env,      file = "../../inst/extdata/env_ensdb_v105_seqs_byTx_fil.rds")
     saveRDS(splice_env,   file = "../../inst/extdata/env_ensdb_v105_splc_byTx_fil.rds")
+    saveRDS(set_env,      file = "../../inst/extdata/env_ensdb_v105_setx_byTx_fil.rds")
     saveRDS(spl_rng_used, file = "../../inst/extdata/grl_ensdb_v105_splc_byTx_fil.rds")
     saveRDS(exn_rng_used, file = "../../inst/extdata/grl_ensdb_v105_exns_byTx_fil.rds")
     saveRDS(txs_used,     file = "../../inst/extdata/grl_ensdb_v105_trnscrpts_fil.rds")
