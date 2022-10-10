@@ -178,7 +178,7 @@ get_rules <- function(ptc_loc, exn_ind, exn_sta, exn_end, num_exn, txname){
     if(is.na(ptc_loc) | is.null(ptc_loc)) return(res)
     res["is_ptc"] <- TRUE
 
-    #- are we in the first 150 bp of the first exon?
+    #- are we in the first 150 bp proximal to the css?
     if( ptc_loc <= 50 )  res["is_cssProximal"] <- TRUE
 
     #- are we in the last (coding!) exon?
@@ -262,7 +262,8 @@ annotate_variants_by_tx <- function( txname, vars, detailed = FALSE){
                                       exn_ind = exn_ind_snvs,
                                       exn_sta = exn_sta_p[exn_ind_snvs],
                                       exn_end = exn_end_p[exn_ind_snvs],
-                                      num_exn = length(exn_sta_p)),
+                                      num_exn = length(exn_sta_p),
+				      txname  = txname),
                                 get_rules)
 
     if(detailed){
@@ -346,12 +347,12 @@ annotate_variants_by_tx <- function( txname, vars, detailed = FALSE){
     d_w <- vars[evr_ind_idl]$alt |> Biostrings::width() -
         vars[evr_ind_idl]$ref |> Biostrings::width()
 
-    afu <- function(ptc_pos, exn_ind, d_w, num_exn){
+    afu <- function(ptc_pos, exn_ind, d_w, num_exn, txname){
         #-----------------------------------------------
         #- if ptc_pos is NA we return FALSE
         if(is.na(ptc_pos)){
             res <- rep(FALSE, 6)
-            names(res) <- c("is_ptc","is_last", "is_penultimate", "is_first", "is_single", "is_407plus")
+            names(res) <- c("is_ptc","is_last", "is_penultimate", "is_cssProximal", "is_single", "is_407plus")
             return(res)
         }
         #- need to make new exon boundaries (in cds/codon space)
@@ -368,13 +369,14 @@ annotate_variants_by_tx <- function( txname, vars, detailed = FALSE){
         #- location of ptc in that exon
         #ptc_loc <- ptc_pos - exn_sta_p[exn_ind_ptc] + 1
         get_rules(ptc_pos, exn_ind_ptc, exn_sta_p_alt[exn_ind_ptc],
-                  exn_end_p_alt[exn_ind_ptc], num_exn)
+                  exn_end_p_alt[exn_ind_ptc], num_exn, txname)
     }
 
     tbl_idl <- purrr::pmap_dfr( list( ptc_pos = ptc_pos,
                                       exn_ind = exn_ind_idl,
                                       d_w     = d_w,
-                                      num_exn = length(exn_sta_p)),
+                                      num_exn = length(exn_sta_p),
+				      txname  = txname),
                                 afu)
 
     if(detailed){
