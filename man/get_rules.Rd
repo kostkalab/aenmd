@@ -4,7 +4,7 @@
 \alias{get_rules}
 \title{Determine NMD escape rules}
 \usage{
-get_rules(ptc_loc, exn_ind, exn_sta, exn_end, num_exn)
+get_rules(ptc_loc, exn_ind, exn_sta, exn_end, num_exn, txname)
 }
 \arguments{
 \item{ptc_loc}{Integer. Location of PTC. In CDS codon coordinates, 1-based.}
@@ -15,7 +15,9 @@ get_rules(ptc_loc, exn_ind, exn_sta, exn_end, num_exn)
 
 \item{exn_end}{Integer. End of the exon. In CDS codon coordinates, 1-based.}
 
-\item{num_exn}{Integer. Number of exons in transcript.}
+\item{num_exn}{Integer. Number of exons in the CDS of the transcript.}
+
+\item{txname}{Character. Ensembl transcript id.}
 }
 \value{
 Logical. Vogical vector with six named elements.
@@ -27,8 +29,8 @@ Determine NMD escape rules
 Return value (Logical vector) has six named elements.
 - \code{is_ptc = TRUE} if there is a PTC in the alternative transcript. 
 - \code{is_last = TRUE} if the PTC is in the last (3'-most) coding exon.
-- \code{is_penultimate = TRUE} if the PTC is in the last 50bp of the penultimate exon.
-- \code{is_first = TRUE} if the PTC is in the first (5'-most) 150bp of the first (coding) exon.
+- \code{is_penultimate = TRUE} if the PTC is within the last 50bp of the penultimate exon.
+- \code{is_cssProximal  = TRUE} if the PTC is within the first (5'-most) 150bp of the translation/coding start site. 
 - \code{is_single = TRUE} if the PTC is in a single exon transcript.
 - \code{is_407plus = TRUE} if the PTC is in an exon that is longer than 407bp.
 }

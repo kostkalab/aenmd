@@ -156,11 +156,13 @@ annotate_nmd <- function(vcf_rng, check_ref = TRUE, verbose = FALSE){
 #'            Each variant has an ``ref`` and ``alt`` metadata column with DNAStrings of the sequences.
 #' @param check_ref Logical. Should variants be verified against refernce sequence.
 #' @param verbose Logical. Report progress.
+#' @param multicore Logical. Should multiple cores be used in the computations (via the `BiocParallel` package). 
 #' @return List.
+#' @details For multicore, the `BiocParallel` default backand returned by `BiocParallel::bpparam()` is used.
 #' @importFrom utils head tail
 #' @examples
 #' @export
-annotate_nmd_v2 <- function(vcf_rng, check_ref = FALSE, verbose = FALSE){
+annotate_nmd_v2 <- function(vcf_rng, check_ref = FALSE, verbose = FALSE , multicore = FALSE){
 #=======================================================================
 
     #- connect variants to exons
@@ -181,9 +183,13 @@ annotate_nmd_v2 <- function(vcf_rng, check_ref = FALSE, verbose = FALSE){
     names(rlst) <- names(future::value(._EA_exn_grl))[sHu]
 
     #- annotate variants for each transcript
-    res <- pbapply::pblapply(seq_len( rlst |> length()),
-                  \(i) annotate_variants_by_tx(names(rlst)[i], rlst[[i]]))
-
+    if(multicore == FALSE){
+        res <- pbapply::pblapply(seq_len( rlst |> length()),
+                                 \(i) annotate_variants_by_tx(names(rlst)[i], rlst[[i]]))
+    } else {
+        res <- BiocParallel::bplapply(seq_len( rlst |> length()),
+                                      \(i) annotate_variants_by_tx(names(rlst)[i], rlst[[i]]))
+    }
     res <- res |> GenomicRanges::GRangesList() |> unlist()
 
     return(res)

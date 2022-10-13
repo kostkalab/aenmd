@@ -4,7 +4,7 @@
 \alias{annotate_nmd_v2}
 \title{Wrapper function for annotating a set of variants with NMD escape}
 \usage{
-annotate_nmd_v2(vcf_rng, check_ref = FALSE, verbose = FALSE)
+annotate_nmd_v2(vcf_rng, check_ref = FALSE, verbose = FALSE, multicore = FALSE)
 }
 \arguments{
 \item{vcf_rng}{GRanges object of variants. Start is first base of variant.
@@ -14,10 +14,15 @@ Each variant has an ``ref`` and ``alt`` metadata column with DNAStrings of the s
 \item{check_ref}{Logical. Should variants be verified against refernce sequence.}
 
 \item{verbose}{Logical. Report progress.}
+
+\item{multicore}{Logical. Should multiple cores be used in the computations (via the `BiocParallel` package).}
 }
 \value{
 List.
 }
 \description{
 Wrapper function for annotating a set of variants with NMD escape
+}
+\details{
+For multicore, the `BiocParallel` default backand returned by `BiocParallel::bpparam()` is used.
 }
