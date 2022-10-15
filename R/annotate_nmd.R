@@ -181,7 +181,11 @@ annotate_nmd_v2 <- function(vcf_rng, check_ref = FALSE, verbose = FALSE , multic
         S4Vectors::mcols(res)$tx_id <- txname
         return(res)
     }
-    rlst        <- lapply(sHu, afu)
+    if(multicore == FALSE){
+        rlst  <- lapply(sHu, afu)
+    } else {
+        rlst  <- BiocParallel::bplapply(sHu, afu)
+    }
     names(rlst) <- names(future::value(._EA_exn_grl))[sHu]
 
     #- annotate variants for each transcript
