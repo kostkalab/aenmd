@@ -98,7 +98,9 @@ process_variants <- function(vcf_rng, check_ref = FALSE, verbose = TRUE){
     ind[ (is.na(mtc)) & (vcf_rng$type == 'snv') ] <- FALSE
     vcf_rng <- vcf_rng[ind]
 
-    #- check that we only have unique variants
+    #- check for duplicated variants
+    #- Happens for example in the GRCh38-lifted-over version of gnomad v 2.2.1
+    #- when GRCh37 SNVs map to GRCh38 SNVs with different RSIDS (e.g, rs782209862 and rs61732915)
     if( !(length(vcf_rng$key) == length(unique(vcf_rng$key))) ){
         stop("duplicated variants")
     }

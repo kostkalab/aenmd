@@ -69,7 +69,7 @@ annotate_variant <- function(rng, tx){
         #- we have a PTC if it is at the end, but the original one was (partially) deleted/expanded.
         cnd2 <- (delta_len>0) & (sae[1] <= (length(seq_ref) -2)) & (sae[2] >= length(seq_ref)-2)
 
-        if(cnd1 | cnd2){
+        if(cnd1 || cnd2){
             is_ptc <- TRUE
         }
     }
@@ -83,7 +83,7 @@ annotate_variant <- function(rng, tx){
 
     #- last exon rule (TRUE if first PTC overlaps last exon)
     is_last <- FALSE
-    if(!is.na(fst_stop) & (!is_single)){
+    if(!is.na(fst_stop) && (!is_single)){
         cnd1 <- fst_stop >=  ( S4Vectors::metadata(seq_alt_p)$exon_starts |> tail(n=1) )
         if(cnd1){
             is_last <- TRUE
@@ -93,25 +93,25 @@ annotate_variant <- function(rng, tx){
     #- penultimate exon rule (true if PTS overlaps last 50bp of penultimate exon)
     #- note that we use 17 AA, which is 51 bp and not 50
     is_penultimate <- FALSE
-    if(!is.na(fst_stop) & (!is_single)){
+    if(!is.na(fst_stop) && (!is_single)){
 
         cnd1 <- fst_stop >=  (S4Vectors::metadata(seq_alt_p)$exon_starts |> tail(n=2))[1]
         cnd2 <- fst_stop <   (S4Vectors::metadata(seq_alt_p)$exon_starts |> tail(n=2))[2]
         cnd3 <- (( (S4Vectors::metadata(seq_alt_p)$exon_starts |> tail(n=2))[2]) - fst_stop) <= 17
 
-        if(cnd1 & cnd2 & cnd3){
+        if(cnd1 && cnd2 && cnd3){
             is_penultimate <- TRUE
         }
     }
 
     #- first exon rule
     is_first <- FALSE
-    if(!is.na(fst_stop) & (!is_single)){
+    if(!is.na(fst_stop) && (!is_single)){
         #- We are in the first exon
         cnd1 <- fst_stop <  (S4Vectors::metadata(seq_alt_p)$exon_starts |> head(n=2))[2]
         #-We are in the first 150 nucleotides (=50 AA) of the first exon
         cnd2 <- fst_stop <= 50
-        if(cnd1 & cnd2){
+        if(cnd1 && cnd2){
             is_first <- TRUE
         }
     }
@@ -175,7 +175,7 @@ get_rules <- function(ptc_loc, exn_ind, exn_sta, exn_end, num_exn, txname){
 
     #- didnt' get a PTC
     #------------------
-    if(is.na(ptc_loc) | is.null(ptc_loc)) return(res)
+    if(is.na(ptc_loc) || is.null(ptc_loc)) return(res)
     res["is_ptc"] <- TRUE
 
     #- are we in the first 150 bp proximal to the css?
@@ -194,7 +194,7 @@ get_rules <- function(ptc_loc, exn_ind, exn_sta, exn_end, num_exn, txname){
     #- are we in (the last 51bp of) the penultimate exon?
     cnd1 <- exn_ind == (num_exn-1)
     cnd2 <- (exn_end - ptc_loc) <= 17
-    if( cnd1 & cnd2) res["is_penultimate"] <- TRUE
+    if( cnd1 && cnd2) res["is_penultimate"] <- TRUE
 
     return(res)
 }
@@ -302,15 +302,21 @@ annotate_variants_by_tx <- function( txname, vars, detailed = FALSE){
     ref_nuc_sta <- ref_nuc_sta[!ind_out]
     ref_nuc_end <- ref_nuc_end[!ind_out]
 
+    #- cut "ovrhanging" parts of variants
+    ohi <- ( ( ref_nuc_end > max(exn_end_t) ) & (ref_nuc_sta <= max(exn_end_t)) ) |> which()
+    ref_nuc_end[ohi] <- max(exn_end_t)
+
     alt_vrs <- vars$alt[evr_ind_idl]
     if(all(GenomicRanges::strand(exn)=="-")) alt_vrs <- Biostrings::reverseComplement(alt_vrs)
     make_alt <- function(ref_nuc_sta, ref_nuc_end, alt, seq_ref){
         if(ref_nuc_sta < length(seq_ref)) {
             Biostrings::xscat(Biostrings::subseq(seq_ref, 1, ref_nuc_sta -1), alt,
                           Biostrings::subseq(seq_ref, ref_nuc_end +1, length(seq_ref)))[[1]]
-        } else {
+        } else if (ref_nuc_sta == length(seq_ref)){
             Biostrings::xscat(Biostrings::subseq(seq_ref, 1, ref_nuc_sta -1), alt)[[1]]
 
+        } else {
+            stop('Variant starts out of CDS')
         }
     }
 
@@ -384,6 +390,11 @@ annotate_variants_by_tx <- function( txname, vars, detailed = FALSE){
             ptc_position_alt_p = stop_pos,
             tx_id = exn$tx_id[exn_ind_idl],
             exn_id = exn$exon_id[exn_ind_idl]) #- this is not the ptc exon but the variant exon
+    }
+    #- return empty range if we don't have any variants (don't think that should happen)
+    if( (c(evr_ind_snvs, evr_ind_idl) |> length()) == 0){
+        empty_range <- GenomicRanges::GRanges('chr0',IRanges(start=0,width=0))
+        return(empty_range)
     }
 
     res <- vars[c(evr_ind_snvs, evr_ind_idl)]
