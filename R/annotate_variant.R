@@ -272,7 +272,7 @@ annotate_variants_by_tx <- function( txname, vars, detailed = FALSE){
             tx_id = exn$tx_id[exn_ind_snvs],
             exn_id = exn$exon_id[exn_ind_snvs])
     }
-
+ 
     #------------------------
     #- INSERTIONS / DELETIONS
     #------------------------

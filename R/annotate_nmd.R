@@ -158,13 +158,14 @@ annotate_nmd <- function(vcf_rng, check_ref = TRUE, verbose = FALSE){
 #'            Each variant has an ``ref`` and ``alt`` metadata column with DNAStrings of the sequences.
 #' @param check_ref Logical. Should variants be verified against refernce sequence.
 #' @param verbose Logical. Report progress.
-#' @param multicore Logical. Should multiple cores be used in the computations (via the `BiocParallel` package). 
+#' @param multicore Logical. Should multiple cores be used in the computations (via the `BiocParallel` package).
+#' @param rettype Character. Should a `GRangesList` be returned (default, `rettype = 'grl'`) or shold results be collated into a `GRanges` object (`rettype = 'gr'`).
 #' @return List.
 #' @details For multicore, the `BiocParallel` default backand returned by `BiocParallel::bpparam()` is used.
 #' @importFrom utils head tail
 #' @examples
 #' @export
-annotate_nmd_v2 <- function(vcf_rng, check_ref = FALSE, verbose = FALSE , multicore = FALSE){
+annotate_nmd_v2 <- function(vcf_rng, check_ref = FALSE, verbose = FALSE , multicore = FALSE, rettype = 'grl'){
 #=======================================================================
 
     #- connect variants to exons
@@ -196,8 +197,21 @@ annotate_nmd_v2 <- function(vcf_rng, check_ref = FALSE, verbose = FALSE , multic
         res <- BiocParallel::bplapply(seq_len( rlst |> length()),
                                       \(i) annotate_variants_by_tx(names(rlst)[i], rlst[[i]]))
     }
-    res <- res |> GenomicRanges::GRangesList() |> unlist()
+
+    if (rettype == "grl") {
+        res <- res  |> GenomicRanges::GRangesList()
+    } else if (rettype == "gr") {
+        #res <- res |> GenomicRanges::GRangesList() |> unlist()
+        #- remove empty ranges
+        minw    <- lapply(res, function(x) min(GenomicRanges::width(x)))
+        ind_out <- which(minw == 0) |> sort()
+        #- return results as GRanges
+        if (length(ind_out) > 0) {
+            res <- res[-ind_out] |> GenomicRanges::GRangesList() |> unlist()
+        } else {
+            res <- res |> GenomicRanges::GRangesList() |> unlist()
+        }
+    }
 
     return(res)
 }
-

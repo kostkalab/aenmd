@@ -4,7 +4,13 @@
 \alias{annotate_nmd_v2}
 \title{Wrapper function for annotating a set of variants with NMD escape}
 \usage{
-annotate_nmd_v2(vcf_rng, check_ref = FALSE, verbose = FALSE, multicore = FALSE)
+annotate_nmd_v2(
+  vcf_rng,
+  check_ref = FALSE,
+  verbose = FALSE,
+  multicore = FALSE,
+  rettype = "grl"
+)
 }
 \arguments{
 \item{vcf_rng}{GRanges object of variants. Start is first base of variant.
@@ -16,6 +22,8 @@ Each variant has an ``ref`` and ``alt`` metadata column with DNAStrings of the s
 \item{verbose}{Logical. Report progress.}
 
 \item{multicore}{Logical. Should multiple cores be used in the computations (via the `BiocParallel` package).}
+
+\item{rettype}{Character. Should a `GRangesList` be returned (default, `rettype = 'grl'`) or shold results be collated into a `GRanges` object (`rettype = 'gr'`).}
 }
 \value{
 List.
