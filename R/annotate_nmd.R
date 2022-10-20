@@ -158,15 +158,16 @@ annotate_nmd <- function(vcf_rng, check_ref = TRUE, verbose = FALSE){
 #'            Each variant has an ``ref`` and ``alt`` metadata column with DNAStrings of the sequences.
 #' @param check_ref Logical. Should variants be verified against refernce sequence.
 #' @param verbose Logical. Report progress.
-#' @param multicore Logical. Should multiple cores be used in the computations (via the `BiocParallel` package).
+#' @param multicore Logical. Should multiple cores be used in the computations (via the parallel pacakge).
+#' @param num_cores Integer. The number of cores to use. Only when \code{multicore = TRUE}.
 #' @param rettype Character. Should a `GRangesList` be returned (default, `rettype = 'grl'`) or shold results be collated into a `GRanges` object (`rettype = 'gr'`).
 #' @return List.
 #' @details For multicore, the `BiocParallel` default backand returned by `BiocParallel::bpparam()` is used.
 #' @importFrom utils head tail
 #' @examples
 #' @export
-annotate_nmd_v2 <- function(vcf_rng, check_ref = FALSE, verbose = FALSE , multicore = FALSE, rettype = 'grl'){
-#=======================================================================
+annotate_nmd_v2 <- function(vcf_rng, check_ref = FALSE, verbose = FALSE , multicore = FALSE, num_cores = 2, rettype = 'grl'){
+#============================================================================================================================
 
     #- connect variants to exons
     ov      <- GenomicRanges::findOverlaps(vcf_rng,
@@ -185,7 +186,7 @@ annotate_nmd_v2 <- function(vcf_rng, check_ref = FALSE, verbose = FALSE , multic
     if(multicore == FALSE){
         rlst  <- lapply(sHu, afu)
     } else {
-        rlst  <- BiocParallel::bplapply(sHu, afu)
+        rlst  <- parallel::mclapply(sHu, afu, mc.cores = num_cores)
     }
     names(rlst) <- names(future::value(._EA_exn_grl))[sHu]
 
@@ -194,12 +195,17 @@ annotate_nmd_v2 <- function(vcf_rng, check_ref = FALSE, verbose = FALSE , multic
         res <- pbapply::pblapply(seq_len( rlst |> length()),
                                  \(i) annotate_variants_by_tx(names(rlst)[i], rlst[[i]]))
     } else {
-        res <- BiocParallel::bplapply(seq_len( rlst |> length()),
-                                      \(i) annotate_variants_by_tx(names(rlst)[i], rlst[[i]]))
+        res <- parallel::mclapply(seq_len( rlst |> length()),
+                                      \(i) annotate_variants_by_tx(names(rlst)[i], rlst[[i]]),
+				      mc.cores = num_cores)
     }
 
+    names(res) <- names(rlst)
+    if(rettype == "raw") return(res)
     if (rettype == "grl") {
-        res <- res  |> GenomicRanges::GRangesList()
+	minw    <- lapply(res, function(x) min(GenomicRanges::width(x)))
+        ind_out <- which(minw == 0) |> sort()
+        res <- res[-ind_out]  |> GenomicRanges::GRangesList()
     } else if (rettype == "gr") {
         #res <- res |> GenomicRanges::GRangesList() |> unlist()
         #- remove empty ranges

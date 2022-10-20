@@ -9,6 +9,7 @@ annotate_nmd_v2(
   check_ref = FALSE,
   verbose = FALSE,
   multicore = FALSE,
+  num_cores = 2,
   rettype = "grl"
 )
 }
@@ -21,7 +22,9 @@ Each variant has an ``ref`` and ``alt`` metadata column with DNAStrings of the s
 
 \item{verbose}{Logical. Report progress.}
 
-\item{multicore}{Logical. Should multiple cores be used in the computations (via the `BiocParallel` package).}
+\item{multicore}{Logical. Should multiple cores be used in the computations (via the parallel pacakge).}
+
+\item{num_cores}{Integer. The number of cores to use. Only when \code{multicore = TRUE}.}
 
 \item{rettype}{Character. Should a `GRangesList` be returned (default, `rettype = 'grl'`) or shold results be collated into a `GRanges` object (`rettype = 'gr'`).}
 }

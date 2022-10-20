@@ -393,7 +393,7 @@ annotate_variants_by_tx <- function( txname, vars, detailed = FALSE){
     }
     #- return empty range if we don't have any variants (don't think that should happen)
     if( (c(evr_ind_snvs, evr_ind_idl) |> length()) == 0){
-        empty_range <- GenomicRanges::GRanges('chr0',IRanges(start=0,width=0))
+        empty_range <- GenomicRanges::GRanges('chr0',IRanges::IRanges(start=0,width=0))
         return(empty_range)
     }
 
