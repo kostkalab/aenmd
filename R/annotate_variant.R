@@ -210,10 +210,10 @@ annotate_variants_by_tx <- function( txname, vars, detailed = FALSE){
 
     #- get CDS and exons for the transcript
     if( is.null( seq <- get0(txname, future::value(._EA_cds_env)) )){
-        return(NULL)
+        stop(past0("Cannot find sequence for ", txname))
     }
     if( is.null( exn <- get0(txname, future::value(._EA_exn_env)) )){
-        return(NULL)
+        stop(past0("Cannot find exons for ", txname))
     }
 
     #- find exon for each variant
@@ -282,6 +282,15 @@ annotate_variants_by_tx <- function( txname, vars, detailed = FALSE){
     evr_ind_idl <- (vars$type != 'snv') |> which()
     exn_ind_idl <- sHm[evr_ind_idl |> as.character()]
 
+    #- we are done here.
+    if(length(evr_ind_idl) == 0){	
+    	res <- vars[evr_ind_snvs]
+    	dfr <- tbl_snv |> S4Vectors::DataFrame()
+    	S4Vectors::mcols(res)$res_aenmd <- dfr
+    	return(res)
+    }
+
+
     #- get the alternative version of the DNA sequence for each variant
     #------------------------------------------------------------------
     seq_ref <- future::value(._EA_cds_env)[[txname]]
@@ -296,15 +305,17 @@ annotate_variants_by_tx <- function( txname, vars, detailed = FALSE){
         ref_nuc_end <- GenomicRanges::end(vars[evr_ind_idl])   - exn_sta_g[exn_ind_idl] + exn_sta_t[exn_ind_idl]
     }
 
-    ind_out     <- (ref_nuc_sta <= 3) #- those overlap the start codon (but not splice regions)
-    evr_ind_idl <- evr_ind_idl[!ind_out]
-    exn_ind_idl <- sHm[evr_ind_idl |> as.character()]
-    ref_nuc_sta <- ref_nuc_sta[!ind_out]
-    ref_nuc_end <- ref_nuc_end[!ind_out]
-
     #- cut "ovrhanging" parts of variants
     ohi <- ( ( ref_nuc_end > max(exn_end_t) ) & (ref_nuc_sta <= max(exn_end_t)) ) |> which()
     ref_nuc_end[ohi] <- max(exn_end_t)
+
+    #- Divvy out variants overlapping the start codon
+    log_over_1  <- (ref_nuc_sta <= 3) #- those overlap the start codon (but not splice regions)
+    ind_over_1  <- which(log_over_1) |> sort()
+    log_nover1  <- !log_over_1
+    ind_nover1  <- which(log_nover1) |> sort()
+    n_nover1    <- sum(log_nover1)
+    n_over_1    <- sum(log_over_1)
 
     alt_vrs <- vars$alt[evr_ind_idl]
     if(all(GenomicRanges::strand(exn)=="-")) alt_vrs <- Biostrings::reverseComplement(alt_vrs)
@@ -326,7 +337,60 @@ annotate_variants_by_tx <- function( txname, vars, detailed = FALSE){
                                              alt_vrs[ind],
                                              seq_ref) )
 
-    seq_alt_p <- seq_alt |> Biostrings::DNAStringSet() |> Biostrings::translate() |> suppressWarnings()
+    if(n_nover1 >0 ){
+ 	#- translate right away
+   	seq_alt_p_nover1 <- seq_alt[ind_nover1] |> Biostrings::DNAStringSet() |> Biostrings::translate() |> suppressWarnings()
+    } 
+    if(n_over_1 > 0 ){
+   	 #- find the start codons (if there are any)
+	 tmp_atg <- Biostrings::vmatchPattern(pattern='atg', subject=DNAStringSet(seq_alt[ind_over_1])) |> Biostrings::start() 
+	 tmp_ttg <- Biostrings::vmatchPattern(pattern='ttg', subject=DNAStringSet(seq_alt[ind_over_1])) |> Biostrings::start() 
+	 tmp_ctg <- Biostrings::vmatchPattern(pattern='ctg', subject=DNAStringSet(seq_alt[ind_over_1])) |> Biostrings::start() 
+
+	 #- get the first one of each type
+	 tmp_atg <- tmp_atg |> lapply(min) |> suppressWarnings()
+	 tmp_ttg <- tmp_ttg |> lapply(min) |> suppressWarnings()
+	 tmp_ctg <- tmp_ctg |> lapply(min) |> suppressWarnings()
+
+	 #- get the first one for each sequence
+	 sci <- sapply(seq_len(tmp_atg |> length()), function(ind) min(c(tmp_atg[[ind]], tmp_ttg[[ind]], tmp_ctg[[ind]])))
+	 
+	 #- do we have sequences we need to drop? such a pain...
+	 inds_in <- (! is.infinite(sci)) |> which()
+	 if((inds_in |> length()) == 0){
+		 seq_alt_p_over1 = NULL
+	 } else {
+		 sci <- sci[inds_in]
+		 seq_alt_p_over1 <- seq_alt[ind_over_1][inds_in] |> Biostrings::DNAStringSet() |>
+		 						    Biostrings::subseq(sci)    |> 
+		 						    Biostrings::translate()    |> 
+								    suppressWarnings()
+	 }
+    }
+  
+    #- seq_alt_p: conatenate and restore order, drop sequences without start codon 
+    ind_in <- seq_len(evr_ind_idl |> length())
+    if( (n_over_1 > 0) && ( n_nover1 > 0) ){ #- both types
+	#-concatenating the NULL works
+  	seq_alt_p <- c(seq_alt_p_nover1, seq_alt_p_over1)
+	ind_in    <- c(ind_nover1, ind_over_1[inds_in])
+    } else if(n_over_1 > 0){ #- only start-overlapping
+	seq_alt_p <- seq_alt_p_over1
+    	ind_in    <-  ind_over_1[inds_in]
+    } else if(n_nover1 > 0){ #- no start-overlapping
+	seq_alt_p <- seq_alt_p_nover1
+	ind_in    <- ind_nover1
+    }
+
+    #- restory order
+    ord       <- order(ind_in)
+    ind_in    <- ind_in[ord]
+    seq_alt_p <- seq_alt_p[ord]
+
+    #-subset all relevant quantities to reflect omission of non-start alternatives
+    evr_ind_idl <- evr_ind_idl[ind_in]
+    exn_ind_idl <- evr_ind_idl[ind_in]
+    seq_alt     <- seq_alt[ind_in] #- don't think we need to do that, actually
 
     #- now we can look for stop codons
     #---------------------------------
@@ -391,7 +455,7 @@ annotate_variants_by_tx <- function( txname, vars, detailed = FALSE){
             tx_id = exn$tx_id[exn_ind_idl],
             exn_id = exn$exon_id[exn_ind_idl]) #- this is not the ptc exon but the variant exon
     }
-    #- return empty range if we don't have any variants (don't think that should happen)
+    #- return empty range if we don't have any variants (example: all variants in tx overlap start, none has a stop)
     if( (c(evr_ind_snvs, evr_ind_idl) |> length()) == 0){
         empty_range <- GenomicRanges::GRanges('chr0',IRanges::IRanges(start=0,width=0))
         return(empty_range)

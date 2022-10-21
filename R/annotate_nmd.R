@@ -203,9 +203,13 @@ annotate_nmd_v2 <- function(vcf_rng, check_ref = FALSE, verbose = FALSE , multic
     names(res) <- names(rlst)
     if(rettype == "raw") return(res)
     if (rettype == "grl") {
-	minw    <- lapply(res, function(x) min(GenomicRanges::width(x)))
+	minw    <- lapply(res, function(x) min(GenomicRanges::width(x))) |> unlist()
         ind_out <- which(minw == 0) |> sort()
-        res <- res[-ind_out]  |> GenomicRanges::GRangesList()
+	if(length(ind_out) >0){
+        	res <- res[-ind_out]  |> GenomicRanges::GRangesList()
+	} else {
+		res <- res |>  GenomicRanges::GRangesList()
+	}
     } else if (rettype == "gr") {
         #res <- res |> GenomicRanges::GRangesList() |> unlist()
         #- remove empty ranges
@@ -216,6 +220,7 @@ annotate_nmd_v2 <- function(vcf_rng, check_ref = FALSE, verbose = FALSE , multic
             res <- res[-ind_out] |> GenomicRanges::GRangesList() |> unlist()
         } else {
             res <- res |> GenomicRanges::GRangesList() |> unlist()
+	    names(res) <- NULL #- transcript names do not make sense here.
         }
     }
 
