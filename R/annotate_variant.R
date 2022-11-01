@@ -208,10 +208,7 @@ get_rules <- function(ptc_loc, exn_ind, exn_sta, exn_end, num_exn, txname){
 annotate_variants_by_tx <- function( txname, vars, detailed = FALSE){
 #====================================================================
 
-    #- get CDS and exons for the transcript
-    if( is.null( seq <- get0(txname, future::value(._EA_cds_env)) )){
-        stop(past0("Cannot find sequence for ", txname))
-    }
+    #- get exons for the transcript
     if( is.null( exn <- get0(txname, future::value(._EA_exn_env)) )){
         stop(past0("Cannot find exons for ", txname))
     }
@@ -282,6 +279,7 @@ annotate_variants_by_tx <- function( txname, vars, detailed = FALSE){
     evr_ind_idl <- (vars$type != 'snv') |> which()
     exn_ind_idl <- sHm[evr_ind_idl |> as.character()]
 
+
     #- we are done here.
     if(length(evr_ind_idl) == 0){	
     	res <- vars[evr_ind_snvs]
@@ -291,9 +289,12 @@ annotate_variants_by_tx <- function( txname, vars, detailed = FALSE){
     }
 
 
+
     #- get the alternative version of the DNA sequence for each variant
     #------------------------------------------------------------------
-    seq_ref <- future::value(._EA_cds_env)[[txname]]
+    if( is.null( seq_ref <- get0(txname, future::value(._EA_cds_env)) )){
+        stop(past0("Cannot find sequence for ", txname))
+    }
 
     #- need to map the genomic variants to the reference protein (CDS/nuc) coordinates
     if(all(GenomicRanges::strand(exn)=="-")){
@@ -304,6 +305,7 @@ annotate_variants_by_tx <- function( txname, vars, detailed = FALSE){
         ref_nuc_sta <- GenomicRanges::start(vars[evr_ind_idl]) - exn_sta_g[exn_ind_idl] + exn_sta_t[exn_ind_idl]
         ref_nuc_end <- GenomicRanges::end(vars[evr_ind_idl])   - exn_sta_g[exn_ind_idl] + exn_sta_t[exn_ind_idl]
     }
+
 
     #- cut "ovrhanging" parts of variants
     ohi <- ( ( ref_nuc_end > max(exn_end_t) ) & (ref_nuc_sta <= max(exn_end_t)) ) |> which()
@@ -368,9 +370,11 @@ annotate_variants_by_tx <- function( txname, vars, detailed = FALSE){
 	 }
     }
   
+
     #- seq_alt_p: conatenate and restore order, drop sequences without start codon 
     ind_in <- seq_len(evr_ind_idl |> length())
     if( (n_over_1 > 0) && ( n_nover1 > 0) ){ #- both types
+
 	#-concatenating the NULL works
   	seq_alt_p <- c(seq_alt_p_nover1, seq_alt_p_over1)
 	ind_in    <- c(ind_nover1, ind_over_1[inds_in])
@@ -387,10 +391,12 @@ annotate_variants_by_tx <- function( txname, vars, detailed = FALSE){
     ind_in    <- ind_in[ord]
     seq_alt_p <- seq_alt_p[ord]
 
+
     #-subset all relevant quantities to reflect omission of non-start alternatives
     evr_ind_idl <- evr_ind_idl[ind_in]
-    exn_ind_idl <- evr_ind_idl[ind_in]
+    exn_ind_idl <- exn_ind_idl[ind_in]
     seq_alt     <- seq_alt[ind_in] #- don't think we need to do that, actually
+
 
     #- now we can look for stop codons
     #---------------------------------
