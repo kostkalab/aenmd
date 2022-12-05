@@ -345,9 +345,9 @@ annotate_variants_by_tx <- function( txname, vars, detailed = FALSE){
     } 
     if(n_over_1 > 0 ){
    	 #- find the start codons (if there are any)
-	 tmp_atg <- Biostrings::vmatchPattern(pattern='atg', subject=DNAStringSet(seq_alt[ind_over_1])) |> Biostrings::start() 
-	 tmp_ttg <- Biostrings::vmatchPattern(pattern='ttg', subject=DNAStringSet(seq_alt[ind_over_1])) |> Biostrings::start() 
-	 tmp_ctg <- Biostrings::vmatchPattern(pattern='ctg', subject=DNAStringSet(seq_alt[ind_over_1])) |> Biostrings::start() 
+	 tmp_atg <- Biostrings::vmatchPattern(pattern='atg', subject=Biostrings::DNAStringSet(seq_alt[ind_over_1])) |> Biostrings::start() 
+	 tmp_ttg <- Biostrings::vmatchPattern(pattern='ttg', subject=Biostrings::DNAStringSet(seq_alt[ind_over_1])) |> Biostrings::start() 
+	 tmp_ctg <- Biostrings::vmatchPattern(pattern='ctg', subject=Biostrings::DNAStringSet(seq_alt[ind_over_1])) |> Biostrings::start() 
 
 	 #- get the first one of each type
 	 tmp_atg <- tmp_atg |> lapply(min) |> suppressWarnings()
