@@ -1,6 +1,6 @@
-
-#library(AnnotationHub)
-library(BSgenome.Hsapiens.NCBI.GRCh38)
+library(Biostrings)
+library(BSgenome.Hsapiens.UCSC.hg38)
+seqlevelsStyle(Hsapiens) <- 'NCBI'
 
 #- collect futures b/c we parallelize later on.
 #. might want to get rid of fturures; they are also slow.
@@ -64,7 +64,7 @@ get_stop_making_snvs <- function(txname, verb = FALSE){
                  rep('T', length(ind_t_1)))
     cmp <- c("T","G","C","A")
     names(cmp) <- c("A","C","G","T")
-    if(all(strand(exn) == '-')){
+    if(all(GenomicRanges::strand(exn) == '-')){
         alt_nuc <- cmp[alt_nuc]
         ref_nuc <- cmp[ref_nuc]
         names(alt_nuc) <- NULL
@@ -74,10 +74,10 @@ get_stop_making_snvs <- function(txname, verb = FALSE){
     #- starts in genome coordinates
     #------------------------------
     #- we map each nucleotide in bp_map
-    se <- start(exn)
-    ee <- end(exn)
-    if(all(strand(exn)=='+')) bp_map <- lapply(seq_len(length(se)),function(ind) seq(se[ind],ee[ind]))
-    if(all(strand(exn)=='-')) bp_map <- lapply(seq_len(length(se)),function(ind) seq(se[ind],ee[ind]) |> rev())
+    se <- GenomicRanges::start(exn)
+    ee <- GenomicRanges::end(exn)
+    if(all(GenomicRanges::strand(exn)=='+')) bp_map <- lapply(seq_len(length(se)),function(ind) seq(se[ind],ee[ind]))
+    if(all(GenomicRanges::strand(exn)=='-')) bp_map <- lapply(seq_len(length(se)),function(ind) seq(se[ind],ee[ind]) |> rev())
 
     #- collect them in a matrix (each codon is one column)
     bp_map               <- bp_map |> unlist()
@@ -99,20 +99,18 @@ get_stop_making_snvs <- function(txname, verb = FALSE){
     return(kys)
 }
 
-#- genome-wide stop-making SNNVs in less than 3.5 minutes:
-#---------------------------------------------------------
-
+#- genome-wide stop-making SNVs
+#------------------------------
 our_tx_ids <- future::value(._EA_txs_grl)$tx_id
 library(BiocParallel)
 tictoc::tic()
 tmp <- bplapply(our_tx_ids, function(x) get_stop_making_snvs(x),
-                BPPARAM = MulticoreParam(workers = 12,progressbar = FALSE))
+                BPPARAM = MulticoreParam(workers = 2,progressbar = TRUE))
 tictoc::toc()
-#- 202.166 sec elapsed
 
 #- What do we find? ~3.5 million ptc-making snvs.
-table(lapply(tmp, is.null) |> unlist())                              #- 30,572 transcripts with stp-gains
-kys <- tmp[!lapply(tmp,is.null) |> unlist()] |> unlist() |> unique() #- 3,505,843 stop-gain-making
+table(lapply(tmp, is.null) |> unlist())                              #- 31,302 transcripts with stp-gains
+kys <- tmp[! (lapply(tmp,is.null) |> unlist()) ] |> unlist() |> unique() #- 3,641,384 stop-gain-making
 
 #- check: does the reference in the key match the reference in the genome?
 #-------------------------------------------------------------------------
@@ -143,5 +141,4 @@ saveRDS(m_vals, file="./inst/extdata/tri-vals_ensdb_v105_fil_all-stop-making-snv
 m_keys <- readRDS(file="./inst/extdata/tri-keys_ensdb_v105_fil_all-stop-making-snvs.rds")
 m_vals <- readRDS(file="./inst/extdata/tri-vals_ensdb_v105_fil_all-stop-making-snvs.rds")
 m_trie <- triebeard::trie(keys = m_keys, values = m_vals)
-
 
