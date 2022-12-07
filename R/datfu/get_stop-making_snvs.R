@@ -21,7 +21,7 @@ get_stop_making_snvs <- function(txname, verb = FALSE){
 
     #- vector of codons / nucleotides
     #--------------------------------
-    cdn_vec <- Biostrings::codons(seq) |> as.character()
+    cdn_vec <- Biostrings::codons(seq) |> as.character() #- this is a bottleneck currently (?!)
     nuc_vec <- as.character(seq) |> strsplit(split="") |> unlist()
 
     #- match potential new stop codons
@@ -102,10 +102,8 @@ get_stop_making_snvs <- function(txname, verb = FALSE){
 #- genome-wide stop-making SNVs
 #------------------------------
 our_tx_ids <- future::value(._EA_txs_grl)$tx_id
-library(BiocParallel)
 tictoc::tic()
-tmp <- bplapply(our_tx_ids, function(x) get_stop_making_snvs(x),
-                BPPARAM = MulticoreParam(workers = 2,progressbar = TRUE))
+tmp <- pbapply::pblapply(our_tx_ids, function(x) get_stop_making_snvs(x))
 tictoc::toc()
 
 #- What do we find? ~3.5 million ptc-making snvs.
