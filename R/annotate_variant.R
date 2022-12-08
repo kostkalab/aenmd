@@ -210,7 +210,7 @@ annotate_variants_by_tx <- function( txname, vars, detailed = FALSE){
 
     #- get exons for the transcript
     if( is.null( exn <- get0(txname, future::value(._EA_exn_env)) )){
-        stop(past0("Cannot find exons for ", txname))
+        stop(paste0("Cannot find exons for ", txname))
     }
 
     #- find exon for each variant
@@ -293,7 +293,7 @@ annotate_variants_by_tx <- function( txname, vars, detailed = FALSE){
     #- get the alternative version of the DNA sequence for each variant
     #------------------------------------------------------------------
     if( is.null( seq_ref <- get0(txname, future::value(._EA_cds_env)) )){
-        stop(past0("Cannot find sequence for ", txname))
+        stop(paste0("Cannot find sequence for ", txname))
     }
 
     #- need to map the genomic variants to the reference protein (CDS/nuc) coordinates

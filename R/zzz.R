@@ -7,30 +7,40 @@
 ._EA_spl_grl <- NULL #- splice regions we use as grl
 ._EA_exn_grl <- NULL #- exons we use as grl
 ._EA_txs_grl <- NULL #- transcripts we use as grl
-#._EA_snv_env <- NULL #- SNVs that caust stop-gains in transcripts we use
 ._EA_snv_tri <- NULL #- SNVs that caust stop-gains in transcripts we use
 ._EA_set_env <- NULL #- list of single exon transcripts ; TODO: make me a tri
 
+#- loading this data package will actually populate the objects above, 
+#  which are needed for the aenmd package to function.
+._EA_dataPackage_name <- 'aenmd.data.ensdb.v105'
+
 .onLoad <- function(libname, pkgname) {
+ 
+    tmp <- paste("-> using data from package:", ._EA_dataPackage_name)
+    lne <- paste(rep('-',max(nchar(tmp), 33)),collapse="")
+
     #- load envs containing data we need
-    packageStartupMessage("\n--------------------------------")
+    packageStartupMessage("")
+    packageStartupMessage(lne)
     packageStartupMessage("Package: aenmd /e\u026A-i\u02D0-\u025Bn-\u025Bm-di\u02D0/")
     packageStartupMessage("(annotating escape from NMD)")
     packageStartupMessage(paste0("Version: ", utils::packageVersion('aenmd')))
-    packageStartupMessage("--------------------------------\n")
-    prefix       <- system.file("extdata", package = "aenmd")
-    ._EA_exn_env     <<- future::future({readRDS(paste0(prefix,'/','env_ensdb_v105_exns_byTx_fil.rds'))}, lazy = TRUE)
-    ._EA_cds_env <<- future::future({readRDS(paste0(prefix,'/','env_ensdb_v105_seqs_byTx_fil.rds'))}, lazy = TRUE)
-    ._EA_spl_env <<- future::future({readRDS(paste0(prefix,'/','env_ensdb_v105_splc_byTx_fil.rds'))}, lazy = TRUE)
-    ._EA_spl_grl <<- future::future({readRDS(paste0(prefix,'/','grl_ensdb_v105_splc_byTx_fil.rds'))}, lazy = TRUE)
-    ._EA_exn_grl <<- future::future({readRDS(paste0(prefix,'/','grl_ensdb_v105_exns_byTx_fil.rds'))}, lazy = TRUE)
-    ._EA_txs_grl <<- future::future({readRDS(paste0(prefix,'/','grl_ensdb_v105_trnscrpts_fil.rds'))}, lazy = TRUE)
-    ._EA_snv_tri <<- future::future({
-        message("aenmd: Reading in PTC-generating SNVs")
-        m_keys <- readRDS(paste0(prefix,'/','tri-keys_ensdb_v105_fil_all-stop-making-snvs.rds'))
-        m_vals <- readRDS(paste0(prefix,'/','tri-vals_ensdb_v105_fil_all-stop-making-snvs.rds'))
-        m_trie <- triebeard::trie(keys = m_keys, values = m_vals)},
-        lazy = TRUE)
-    ._EA_set_env <<- future::future({readRDS(paste0(prefix,'/','env_ensdb_v105_setx_byTx_fil.rds'))}, lazy = TRUE)
+    packageStartupMessage(lne)
+
+    packageStartupMessage(tmp) 
+   
+    ._EA_exn_env <<- get0( '._EA_exn_env' , envir = asNamespace(._EA_dataPackage_name))
+    ._EA_cds_env <<- get0( '._EA_cds_env' , envir = asNamespace(._EA_dataPackage_name))
+    ._EA_spl_env <<- get0( '._EA_spl_env' , envir = asNamespace(._EA_dataPackage_name))
+    ._EA_spl_grl <<- get0( '._EA_spl_grl' , envir = asNamespace(._EA_dataPackage_name))
+    ._EA_exn_grl <<- get0( '._EA_exn_grl' , envir = asNamespace(._EA_dataPackage_name))
+    ._EA_txs_grl <<- get0( '._EA_txs_grl' , envir = asNamespace(._EA_dataPackage_name))
+    ._EA_snv_tri <<- get0( '._EA_snv_tri' , envir = asNamespace(._EA_dataPackage_name))
+    ._EA_set_env <<- get0( '._EA_set_env' , envir = asNamespace(._EA_dataPackage_name))
+   
+    packageStartupMessage(lne)
+
+    library(._EA_dataPackage_name, character.only = TRUE)
+    rm(tmp)
 }
 
