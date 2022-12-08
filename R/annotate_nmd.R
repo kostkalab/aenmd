@@ -112,50 +112,6 @@ process_variants <- function(vcf_rng, check_ref = FALSE, verbose = TRUE){
 #' @param vcf_rng GRanges object of variants. Start is first base of variant.
 #'            Each variant is of length 1.
 #'            Each variant has an ``ref`` and ``alt`` metadata column with DNAStrings of the sequences.
-#' @param check_ref Logical. Should the reference alleles be checked against assembly.
-#' @param verbose Logical. Report progress.
-#' @return List.
-#' @importFrom utils head tail
-#' @examples
-#' @export
-annotate_nmd <- function(vcf_rng, check_ref = TRUE, verbose = FALSE){
-#====================================================================
-
-    if(verbose) message("Processing variants.")
-
-    #vcf_rng <- process_variants(vcf_rng, check_ref, verbose)
-
-    #- explode variants into variant/transcript pairs
-    #  FIXME: we could make the transcript set more flexible...
-    #         maybe pass it as a function arg, provide more than just tsl=1
-    if(verbose) message("Creating variant-transcript pairs.")
-    ov                 <- GenomicRanges::findOverlaps(vcf_rng,
-                                                      future::value(._EA_exn_grl))
-    vcf_rng_by_tx      <- vcf_rng[S4Vectors::queryHits(ov)] #- 405,094
-    vcf_rng_by_tx$enst <- names(future::value(._EA_exn_grl))[S4Vectors::subjectHits(ov)]
-
-    #- TODO: why is this still getting vars? Should be in process_variant already...
-    if(length(vcf_rng_by_tx) == 0){
-        message("No transcript-overlapping variants.")
-        return(vcf_rng_by_tx)
-    }
-
-    #- actually annotate variants
-    #- TODO: add parallel capability.
-    if(verbose) message("Annotating variant-trainscript pairs for NMD escape.")
-    rr <- lapply(seq_len(length(vcf_rng_by_tx)), function(ind) annotate_variant(vcf_rng_by_tx[ind],vcf_rng_by_tx[ind]$enst ))
-    rmat <- unlist(lapply(rr,function(x) x[[1]])) |> matrix(byrow=TRUE, ncol=6)
-    colnames(rmat) <- rr[[1]]$rules |> names()
-    vcf_rng_by_tx$rules <- rmat
-
-    if(verbose) message("Done.")
-    return(vcf_rng_by_tx)
-}
-
-#' Wrapper function for annotating a set of variants with NMD escape
-#' @param vcf_rng GRanges object of variants. Start is first base of variant.
-#'            Each variant is of length 1.
-#'            Each variant has an ``ref`` and ``alt`` metadata column with DNAStrings of the sequences.
 #' @param check_ref Logical. Should variants be verified against refernce sequence.
 #' @param verbose Logical. Report progress.
 #' @param multicore Logical. Should multiple cores be used in the computations (via the parallel pacakge).

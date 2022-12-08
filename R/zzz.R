@@ -37,10 +37,7 @@
     ._EA_txs_grl <<- get0( '._EA_txs_grl' , envir = asNamespace(._EA_dataPackage_name))
     ._EA_snv_tri <<- get0( '._EA_snv_tri' , envir = asNamespace(._EA_dataPackage_name))
     ._EA_set_env <<- get0( '._EA_set_env' , envir = asNamespace(._EA_dataPackage_name))
-   
     packageStartupMessage(lne)
-
-    library(._EA_dataPackage_name, character.only = TRUE)
     rm(tmp)
 }
 
