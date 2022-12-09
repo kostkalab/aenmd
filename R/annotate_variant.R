@@ -22,7 +22,8 @@ collect_vars_by_exons <- function(txname, vars){
 }
 
 #- exn_x_vrs has exons indexes as values and variant indexes as names. 
-annotate_vars_by_tx_snv <- function(txname, vars, exn, exn_x_vrs, detailed = FALSE){
+annotate_vars_by_tx_snv <- function(txname, vars, exn, exn_x_vrs, css_prox_dist = 150L,
+                                    penultimate_prox_dist = 50L, detailed = FALSE){
 #===================================================================================
 
     #-exon starts and ends (genome, "transcript", protein) for reference
@@ -63,7 +64,9 @@ annotate_vars_by_tx_snv <- function(txname, vars, exn, exn_x_vrs, detailed = FAL
                                       exn_sta = exn_sta_t[exn_ind_snv],
                                       exn_end = exn_end_t[exn_ind_snv],
                                       num_exn = length(exn_sta_t),
-				      txname  = txname),
+				                      txname  = txname,
+                                      css_prox_dist = css_prox_dist,
+                                      penultimate_prox_dist = penultimate_prox_dist),
                                 apply_nmd_escape_rules)
 
     if(detailed){
@@ -78,7 +81,8 @@ annotate_vars_by_tx_snv <- function(txname, vars, exn, exn_x_vrs, detailed = FAL
 }
 
 
-annotate_vars_by_tx_idl <- function(txname, vars, exn, exn_x_vrs, detailed = FALSE){
+annotate_vars_by_tx_idl <- function(txname, vars, exn, exn_x_vrs, css_prox_dist = 150L, 
+                                    penultimate_prox_dist = 50L, detailed = FALSE){
 #===================================================================================
 
     #-exon starts and ends (genome, "transcript", protein) for reference
@@ -229,7 +233,8 @@ annotate_vars_by_tx_idl <- function(txname, vars, exn, exn_x_vrs, detailed = FAL
     d_w <- vars[evr_ind_idl]$alt |> Biostrings::width() -
         vars[evr_ind_idl]$ref |> Biostrings::width()
 
-    afu <- function(ptc_pos, exn_ind, d_w, num_exn, txname){
+    afu <- function(ptc_pos, exn_ind, d_w, num_exn, txname, 
+                    css_prox_dist, penultimate_prox_dist){
         #-----------------------------------------------
         #- if ptc_pos is NA we return FALSE
         if(is.na(ptc_pos)){
@@ -260,14 +265,17 @@ annotate_vars_by_tx_idl <- function(txname, vars, exn, exn_x_vrs, detailed = FAL
         #- location of ptc in that exon
         #ptc_loc <- ptc_pos - exn_sta_p[exn_ind_ptc] + 1
         apply_nmd_escape_rules(ptc_pos, exn_ind_ptc, exn_sta_t_alt[exn_ind_ptc],
-                                exn_end_t_alt[exn_ind_ptc], num_exn, txname)
+                                exn_end_t_alt[exn_ind_ptc], num_exn, txname,
+                                css_prox_dist = css_prox_dist, penultimate_prox_dist = penultimate_prox_dist)
     }
 
     tbl_idl <- purrr::pmap_dfr( list( ptc_pos = ptc_pos,
                                       exn_ind = exn_ind_idl,
                                       d_w     = d_w,
                                       num_exn = length(exn_sta_p),
-				                      txname  = txname),
+				                      txname  = txname,
+                                      css_prox_dist = css_prox_dist,
+                                      penultimate_prox_dist = penultimate_prox_dist),
                                 afu)
 
     if(detailed){
@@ -286,10 +294,13 @@ annotate_vars_by_tx_idl <- function(txname, vars, exn, exn_x_vrs, detailed = FAL
 #'
 #' @param txname Character. Transcript name.
 #' @param vars GRanges. Overlapping variants.
+#' @param css_prox_dist Integer. Distance to the CSS defining NMD escape regions.
+#' @param penultimate_prox_dist Integer. Distance to the penultimate exon 3'end defining NMD escape regions.
 #' @param detailed Logical. Should additional information be returned.
 #' @return GRanges.
-annotate_variants_by_tx <- function( txname, vars, detailed = FALSE){
-#====================================================================
+annotate_variants_by_tx <- function( txname, vars, css_prox_dist = 150L, 
+                                     penultimate_prox_dist = 50L, detailed = FALSE){
+#===================================================================================
 
     #- get vars overlapping the tx, and exons
     #----------------------------------------
@@ -297,11 +308,13 @@ annotate_variants_by_tx <- function( txname, vars, detailed = FALSE){
 
     #- get the SNVs
     #--------------
-    res_snv <- annotate_vars_by_tx_snv(txname, vars, res_tmp$exn, res_tmp$exn_x_vrs, detailed = detailed)
+    res_snv <- annotate_vars_by_tx_snv(txname, vars, res_tmp$exn, res_tmp$exn_x_vrs, 
+                                       css_prox_dist = css_prox_dist, penultimate_prox_dist = penultimate_prox_dist, detailed = detailed)
 
     #- get the indels
     #----------------
-    res_idl <- annotate_vars_by_tx_idl(txname, vars, res_tmp$exn, res_tmp$exn_x_vrs, detailed = detailed)
+    res_idl <- annotate_vars_by_tx_idl(txname, vars, res_tmp$exn, res_tmp$exn_x_vrs,
+                                       css_prox_dist = css_prox_dist, penultimate_prox_dist = penultimate_prox_dist, detailed = detailed)
 
     #- collate and return
     if(is.null(res_snv)){

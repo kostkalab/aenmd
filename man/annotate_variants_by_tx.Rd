@@ -4,12 +4,22 @@
 \alias{annotate_variants_by_tx}
 \title{Annotate variants overlapping a transcript}
 \usage{
-annotate_variants_by_tx(txname, vars, detailed = FALSE)
+annotate_variants_by_tx(
+  txname,
+  vars,
+  css_prox_dist = 150L,
+  penultimate_prox_dist = 50L,
+  detailed = FALSE
+)
 }
 \arguments{
 \item{txname}{Character. Transcript name.}
 
 \item{vars}{GRanges. Overlapping variants.}
+
+\item{css_prox_dist}{Integer. Distance to the CSS defining NMD escape regions.}
+
+\item{penultimate_prox_dist}{Integer. Distance to the penultimate exon 3'end defining NMD escape regions.}
 
 \item{detailed}{Logical. Should additional information be returned.}
 }

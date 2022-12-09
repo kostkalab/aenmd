@@ -15,7 +15,7 @@ parse_vcf <- function(vcf_filename, pass_only = TRUE){
     vcf_rng$alt     <- vcfR::getALT(vcf) |> Biostrings::DNAStringSet()
     vcf_rng$id      <- vcfR::getID(vcf)
     vcf_rng$filter  <- vcfR::getFILTER(vcf)
-
+    vcf_rng$qual    <- vcfR::getQUAL(vcf)
     GenomeInfoDb::seqlevelsStyle(vcf_rng) <- 'NCBI'
 
     if(pass_only){
@@ -112,6 +112,8 @@ process_variants <- function(vcf_rng, check_ref = FALSE, verbose = TRUE){
 #' @param vcf_rng GRanges object of variants. Start is first base of variant.
 #'            Each variant is of length 1.
 #'            Each variant has an ``ref`` and ``alt`` metadata column with DNAStrings of the sequences.
+#' @param css_prox_dist  Distance to the CSS defining NMD escape regions.
+#' @param penultimate_prox_dist Integer. Distance to the penultimate exon 3'end defining NMD escape regions.
 #' @param check_ref Logical. Should variants be verified against refernce sequence.
 #' @param verbose Logical. Report progress.
 #' @param multicore Logical. Should multiple cores be used in the computations (via the parallel pacakge).
@@ -122,7 +124,8 @@ process_variants <- function(vcf_rng, check_ref = FALSE, verbose = TRUE){
 #' @importFrom utils head tail
 #' @examples
 #' @export
-annotate_nmd_v2 <- function(vcf_rng, check_ref = FALSE, verbose = FALSE , multicore = FALSE, num_cores = 2, rettype = 'grl'){
+annotate_nmd <- function(vcf_rng, css_prox_dist = 150L, penultimate_prox_dist = 50L,
+                            check_ref = FALSE, verbose = FALSE , multicore = FALSE, num_cores = 2, rettype = 'grl'){
 #============================================================================================================================
 
     #- connect variants to exons
@@ -146,14 +149,18 @@ annotate_nmd_v2 <- function(vcf_rng, check_ref = FALSE, verbose = FALSE , multic
     }
     names(rlst) <- names(future::value(._EA_exn_grl))[sHu]
 
-    #- annotate variants for each transcript
+    #- annotate variants for each transcript        
     if(multicore == FALSE){
         res <- pbapply::pblapply(seq_len( rlst |> length()),
-                                 \(i) annotate_variants_by_tx(names(rlst)[i], rlst[[i]]))
+                                 \(i) annotate_variants_by_tx(names(rlst)[i], rlst[[i]],
+                                                              css_prox_dist = css_prox_dist, 
+                                                              penultimate_prox_dist = penultimate_prox_dist))
     } else {
         res <- parallel::mclapply(seq_len( rlst |> length()),
-                                      \(i) annotate_variants_by_tx(names(rlst)[i], rlst[[i]]),
-				      mc.cores = num_cores)
+                                      \(i) annotate_variants_by_tx(names(rlst)[i], rlst[[i]],
+                                                                   css_prox_dist = css_prox_dist, 
+                                                                   penultimate_prox_dist = penultimate_prox_dist),
+				                  mc.cores = num_cores)
     }
 
     names(res) <- names(rlst)
