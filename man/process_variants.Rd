@@ -4,7 +4,12 @@
 \alias{process_variants}
 \title{Filters / processes variants}
 \usage{
-process_variants(vcf_rng, check_ref = FALSE, verbose = TRUE)
+process_variants(
+  vcf_rng,
+  check_ref = FALSE,
+  genome = ifelse(check_ref, BSgenome.Hsapiens.NCBI.GRCh38::Hsapiens, NA),
+  verbose = TRUE
+)
 }
 \arguments{
 \item{vcf_rng}{GRanges object of variants. Start is first base of variant.
@@ -12,6 +17,8 @@ Each variant is of length 1.
 Each variant has an ``ref`` and ``alt`` metadata column with DNAStringSets of the sequences.}
 
 \item{check_ref}{Logical. Should the reference alleles be checked against assembly.}
+
+\item{genome}{Depends. BSgenome for checking reference, if \code{check_ref == TRUE}, \code{NA} otherwise.}
 
 \item{verbose}{Logical. Report progress.}
 }

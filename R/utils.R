@@ -77,3 +77,58 @@ get_start_end <- function(gr1, gr2){
 }
 
 
+#' Update exon boundaries for alternative allele's sequence
+#' @param exn_sta_t Integer. Vector, the exon starts (in transcript coordinates), reference allele
+#' @param exn_end_t Integer. Same as \code{exn_sta_t}, just the exon ends
+#' @param exn_inds Integer. The exons (typically one, can be more than one) the variant overlaps
+#' @param d_w Integer. The diffrence in length between reference and alterntive allele.
+#' @param sci Integer. The start in the alternative sequence where its start codon starts.
+#' 
+#' @return List. Two components, \code{exn_sta_t_alt} and \code{exn_end_t_alt}.
+#' 
+mev_alt_exn_bnd <- function(exn_sta_t, exn_end_t, exn_inds, d_w, sci){
+
+        exn_sta_t_alt <- exn_sta_t
+        exn_end_t_alt <- exn_end_t
+
+        #- fuse exon boundaries for multi-exon variants
+        exn_ind_5p <- min(exn_inds)
+        exn_ind_3p <- max(exn_inds)
+        if( exn_ind_5p != exn_ind_3p ){
+                exn_in  <- exn_ind_5p
+                exn_out <- (exn_ind_5p:exn_ind_3p)[-1]
+                exn_end_t_alt[exn_in] <- exn_end_t[exn_out |> max()]
+                exn_sta_t_alt <- exn_sta_t_alt[-exn_out]
+                exn_end_t_alt <- exn_end_t_alt[-exn_out]
+                exn_inds <- exn_ind_5p
+        }
+
+        #- new exon boundaries (in tx/nuc space)
+        inds          <- exn_ind_5p : length(exn_sta_t_alt)
+        delt          <- rep(d_w, length(inds))
+
+        exn_sta_t_alt[inds[-1]] <- exn_sta_t_alt[inds[-1]] + delt[-1] #- first exon can be wrong, adjust below, so ignore possible overhang here
+        exn_end_t_alt[inds]     <- exn_end_t_alt[inds]     + delt
+
+        #- adjust for new CDS, if applicable (first "exon" starts at CSS)
+        sta_coords_alt_t  <- (sci - 1) + 1:3
+        new_first_exn_ind <- ( exn_sta_t_alt <=  ( sta_coords_alt_t  |> min() ) ) |> which() |> max()
+        exn_in            <- new_first_exn_ind:length(exn_sta_t_alt)
+        exn_sta_t_alt     <- exn_sta_t_alt[exn_in]
+        exn_end_t_alt     <- exn_end_t_alt[exn_in]
+        #- delete nucleotides before new start
+        del_nucs <- sci-exn_sta_t_alt[1]
+        #if( (exn_ind_5p == 1) && (exn_sta_t_alt[1] > 1)){
+        #    #- adjust for 5p overhang
+        #    del_nucs = del_nucs + exn_sta_t_alt[1] - 1
+        #}
+
+        exn_sta_t_alt[1] <- exn_sta_t_alt[1] + del_nucs
+        #- make it 1-based, because we are starting with the start codon
+        tmp           <- exn_sta_t_alt[1] - 1
+        exn_sta_t_alt <- exn_sta_t_alt -  tmp
+        exn_end_t_alt <- exn_end_t_alt -  tmp
+        
+        return(list(exn_sta_t_alt = exn_sta_t_alt, exn_end_t_alt = exn_end_t_alt))
+}
+

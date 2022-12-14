@@ -14,10 +14,10 @@ collect_vars_by_exons <- function(txname, vars){
     qH <- S4Vectors::queryHits(ov)
     sH <- S4Vectors::subjectHits(ov)
     if( (qH |> max() |> table()) > 1) stop("multiple-exon variants are not supported.")
-    #- we can now look up for each variant its exon
-    sHm        <- sH
-    names(sHm) <- qH
-
+    #- we can now look up for each variant its exon;
+    #sHm        <- sH
+    #names(sHm) <- qH
+    sHm <- tapply(sH, qH, \(x) x, simplify = FALSE)
     return(list(exn = exn, exn_x_vrs = sHm))
 }
 
@@ -32,11 +32,11 @@ annotate_vars_by_tx_snv <- function(txname, vars, exn, exn_x_vrs, css_prox_dist 
     exn_end_g <- GenomicRanges::end(exn)
     exn_sta_t <- c(1, cumsum(GenomicRanges::width(exn))[-length(exn)]+1)
     exn_end_t <- cumsum(GenomicRanges::width(exn))
-    exn_sta_p <- (exn_sta_t -1) %/% 3 + 1
-    exn_end_p <- (exn_end_t -1) %/% 3 + 1
+    #exn_sta_p <- (exn_sta_t -1) %/% 3 + 1
+    #exn_end_p <- (exn_end_t -1) %/% 3 + 1
     #- which nucleotide in codon: 1, 2 or 3
-    exn_sta_p_nc <- (exn_sta_t -1) %% 3 + 1
-    exn_end_p_nc <- (exn_end_t -1) %% 3 + 1
+    #exn_sta_p_nc <- (exn_sta_t -1) %% 3 + 1
+    #exn_end_p_nc <- (exn_end_t -1) %% 3 + 1
 
     #------
     #- All SNVs are PTC-generating (others have been filtered out)
@@ -45,7 +45,13 @@ annotate_vars_by_tx_snv <- function(txname, vars, exn, exn_x_vrs, css_prox_dist 
     if( length(evr_ind_snv) == 0 ){ #- already done here
         return(NULL)
     }
+    #- exons for SNVs
     exn_ind_snv <- exn_x_vrs[evr_ind_snv |> as.character()]
+    #- SNVS should not span multiple exons
+    if( (lapply(exn_ind_snv, length) |> unlist() > 1) |> any()){
+        stop("SNV spans multiple exons. Aborting.")
+    }
+    exn_ind_snv <- exn_ind_snv |> unlist() #- use it as vector here.
 
     #- get the codons
     if(all(GenomicRanges::strand(exn)=="-")){
@@ -91,11 +97,11 @@ annotate_vars_by_tx_idl <- function(txname, vars, exn, exn_x_vrs, css_prox_dist 
     exn_end_g <- GenomicRanges::end(exn)
     exn_sta_t <- c(1, cumsum(GenomicRanges::width(exn))[-length(exn)]+1)
     exn_end_t <- cumsum(GenomicRanges::width(exn))
-    exn_sta_p <- (exn_sta_t -1) %/% 3 + 1
-    exn_end_p <- (exn_end_t -1) %/% 3 + 1
+   # exn_sta_p <- (exn_sta_t -1) %/% 3 + 1
+   # exn_end_p <- (exn_end_t -1) %/% 3 + 1
     #- which nucleotide in codon: 1, 2 or 3
-    exn_sta_p_nc <- (exn_sta_t -1) %% 3 + 1
-    exn_end_p_nc <- (exn_end_t -1) %% 3 + 1
+   # exn_sta_p_nc <- (exn_sta_t -1) %% 3 + 1
+   #exn_end_p_nc <- (exn_end_t -1) %% 3 + 1
 
     #- Here we need to make the new protein to find the PTC position
     #  (that's only strictly true for insertions, but okay)
@@ -103,7 +109,8 @@ annotate_vars_by_tx_idl <- function(txname, vars, exn, exn_x_vrs, css_prox_dist 
     if(length(evr_ind_idl) == 0){	
     	return(NULL)#- we are done here.
     }
-    exn_ind_idl <- exn_x_vrs[evr_ind_idl |> as.character()]
+    exn_ind_idl     <- exn_x_vrs[evr_ind_idl |> as.character()] #- LIST; possible multi-exon variants.
+    exn_ind_idl_5p  <- exn_ind_idl |> lapply(min) |> unlist()   #- VECTOR; holds 5p-most exons for multi-exon variants
 
     #- get the alternative version of the DNA sequence for each variant
     #------------------------------------------------------------------
@@ -113,26 +120,75 @@ annotate_vars_by_tx_idl <- function(txname, vars, exn, exn_x_vrs, css_prox_dist 
 
     #- need to map the genomic variants to the reference protein (CDS/nuc) coordinates
     if(all(GenomicRanges::strand(exn)=="-")){
-        ref_nuc_sta <- exn_end_g[exn_ind_idl] - GenomicRanges::end(vars[evr_ind_idl])     + exn_sta_t[exn_ind_idl]
-        ref_nuc_end <- exn_end_g[exn_ind_idl] - GenomicRanges::start(vars[evr_ind_idl])   + exn_sta_t[exn_ind_idl]
+        ref_nuc_sta <- exn_end_g[exn_ind_idl_5p] - GenomicRanges::end(vars[evr_ind_idl])     + exn_sta_t[exn_ind_idl_5p]
+        ref_nuc_end <- exn_end_g[exn_ind_idl_5p] - GenomicRanges::start(vars[evr_ind_idl])   + exn_sta_t[exn_ind_idl_5p]
 
     } else{
-        ref_nuc_sta <- GenomicRanges::start(vars[evr_ind_idl]) - exn_sta_g[exn_ind_idl] + exn_sta_t[exn_ind_idl]
-        ref_nuc_end <- GenomicRanges::end(vars[evr_ind_idl])   - exn_sta_g[exn_ind_idl] + exn_sta_t[exn_ind_idl]
+        ref_nuc_sta <- GenomicRanges::start(vars[evr_ind_idl]) - exn_sta_g[exn_ind_idl_5p] + exn_sta_t[exn_ind_idl_5p]
+        ref_nuc_end <- GenomicRanges::end(vars[evr_ind_idl])   - exn_sta_g[exn_ind_idl_5p] + exn_sta_t[exn_ind_idl_5p]
     }
 
-    #- cut "ovrhanging" parts of variants
-    ohi <- ( ( ref_nuc_end > max(exn_end_t) ) & (ref_nuc_sta <= max(exn_end_t)) ) |> which()
-    ref_nuc_end[ohi] <- max(exn_end_t)
+    #--------------------------------------------------------------------------------------
+    #- deal with OVERHANGING variants, i.e. variants that extend beyond the coding sequence
+    #--------------------------------------------------------------------------------------
+    #- example:
+    #
+    #     XX|X                   Variant
+    #  =====|ATG=...==TER|=====  Transcript / CDS
+    #     AA|ATG                 Reference AAA
+    #     A-|-TG                 Alternative A
+    #
+    #                   X|XXX    Variant 
+    #  =====|ATG=...==TER|=====  Transcript / CDS
+    #                 TAG|ATT    Reference GATT
+    #                   T|A      Alternative TA
+    #
+    #  HOW WE DEAL WITH IT:
+    #
+    #  1. Append the reference sequence to include overhaning sequence
+    #  2. Adjust ref_nuc_sta and ref_nuc_end accordingly.
+    #  (note): there is only one ref_seq but potentially many variants.
+    #          so we do this with the maximum "overhangs" of all the variants.
+    #-----------------------------------------------------------------------------------------
 
-    #- Divvy out variants overlapping the start codon
-    log_over_1  <- (ref_nuc_sta <= 3) #- those overlap the start codon (but not splice regions)
-    ind_over_1  <- which(log_over_1) |> sort()
-    log_nover1  <- !log_over_1
-    ind_nover1  <- which(log_nover1) |> sort()
-    n_nover1    <- sum(log_nover1)
-    n_over_1    <- sum(log_over_1)
+    #- find out variants that need overhanging treatment
+    over_5p_lgl <- ( ( ref_nuc_sta < min(exn_sta_t) ) & (ref_nuc_end >= min(exn_sta_t)) )
+    over_5p_ind <- over_5p_lgl |> which()
 
+    over_3p_lgl <-  ( ( ref_nuc_end > max(exn_end_t) ) & (ref_nuc_sta <= max(exn_end_t)) )
+    over_3p_ind <-  over_3p_lgl |> which()
+
+    #- find maximum overhangs
+    over_5p <- ref_nuc_sta |> (\(x) (-1)* (min(x) -1))()       |> (\(x) pmax(x,0))()
+    over_3p <- ref_nuc_end |> (\(x) max(x) - max(exn_end_t))() |> (\(x) pmax(x,0))()
+
+    max_over_5p_val <- max(over_5p)
+    max_over_5p_ind <- which.max(over_5p) #- it is okay if there are more than one, can take any. (reference is the same)
+    max_over_3p_val <- max(over_3p)
+    max_over_3p_ind <- which.max(over_3p) #- gain, if there are many, any of them will do. (reference is the same)
+
+    #- Append sequence on the 5' and fix ref_nuc_sta, and the exon starts
+    if(max_over_5p_val > 0){
+        over_seq    <- vars[max_over_5p_ind]$ref |> Biostrings::subseq(1L, max_over_5p_val)
+        if( (GenomicRanges::strand(exn) == "-") |> all()) over_seq <- over_seq |> Biostrings::reverseComplement()
+        seq_ref     <- Biostrings::xscat(over_seq,seq_ref)[[1]]
+        ref_nuc_sta <- ref_nuc_sta + max_over_5p_val 
+        ref_nuc_end <- ref_nuc_end + max_over_5p_val 
+        exn_sta_t   <- exn_sta_t + max_over_5p_val
+        exn_end_t   <- exn_end_t + max_over_5p_val
+    }
+    #- Append sequence on the 3' and fix ref_nuc_end
+    if(max_over_3p_val > 0){
+        refwidth    <- vars[max_over_3p_ind]$ref |> width()
+        over_seq    <- vars[max_over_3p_ind]$ref |> Biostrings::subseq(refwidth - max_over_3p_val - 1, refwidth)
+        if( (GenomicRanges::strand(exn) == "-") |> all()) over_seq <- over_seq |> Biostrings::reverseComplement()
+        seq_ref     <- Biostrings::xscat(seq_ref, over_seq)[[1]]
+        ref_nuc_end <- ref_nuc_end + max_over_3p_val
+    }
+
+
+    #- GET alternative allele sequence
+    #---------------------------------
     alt_vrs <- vars$alt[evr_ind_idl]
     if(all(GenomicRanges::strand(exn)=="-")) alt_vrs <- Biostrings::reverseComplement(alt_vrs)
     make_alt <- function(ref_nuc_sta, ref_nuc_end, alt, seq_ref){
@@ -143,7 +199,7 @@ annotate_vars_by_tx_idl <- function(txname, vars, exn, exn_x_vrs, css_prox_dist 
             Biostrings::xscat(Biostrings::subseq(seq_ref, 1, ref_nuc_sta -1), alt)[[1]]
 
         } else {
-            stop('Variant starts out of CDS')
+            stop('Variant starts out of (extended) CDS')
         }
     }
 
@@ -153,60 +209,83 @@ annotate_vars_by_tx_idl <- function(txname, vars, exn, exn_x_vrs, css_prox_dist 
                                              alt_vrs[ind],
                                              seq_ref) )
 
-    if(n_nover1 >0 ){
+    #- Divvy out variants overlapping the start codon and treat
+    #----------------------------------------------------------
+    over_1_lgl    <- (ref_nuc_sta <= 3 + max_over_5p_val) #- those overlap the start codon
+    over_1_ind    <- which(over_1_lgl) |> sort()
+    n_over_1_lgl  <- !over_1_lgl
+    n_over_1_ind  <- which(n_over_1_lgl) |> sort()
+    num_over_1    <- sum(over_1_lgl)
+    num_n_over_1  <- sum(n_over_1_lgl)
+
+    if(num_n_over_1>0 ){
  	    #- translate right away
-   	    seq_alt_p_nover1 <- seq_alt[ind_nover1] |> Biostrings::DNAStringSet() |> Biostrings::translate() |> suppressWarnings()
+   	    seq_alt_p_n_over_1 <- seq_alt[n_over_1_ind] |> Biostrings::DNAStringSet() |> Biostrings::translate() |> suppressWarnings()
+        seq_alt_n_over_1   <- seq_alt[n_over_1_ind]
     } 
-    if(n_over_1 > 0 ){
+    if(num_over_1 > 0 ){
    	    #- find the start codons (if there are any)
-	    tmp_atg <- Biostrings::vmatchPattern(pattern='atg', subject=Biostrings::DNAStringSet(seq_alt[ind_over_1])) |> Biostrings::start() 
-	    tmp_ttg <- Biostrings::vmatchPattern(pattern='ttg', subject=Biostrings::DNAStringSet(seq_alt[ind_over_1])) |> Biostrings::start() 
-	    tmp_ctg <- Biostrings::vmatchPattern(pattern='ctg', subject=Biostrings::DNAStringSet(seq_alt[ind_over_1])) |> Biostrings::start() 
+	    tmp_atg <- Biostrings::vmatchPattern(pattern='atg', subject=Biostrings::DNAStringSet(seq_alt[over_1_ind])) |> Biostrings::start() 
+	    tmp_ttg <- Biostrings::vmatchPattern(pattern='ttg', subject=Biostrings::DNAStringSet(seq_alt[over_1_ind])) |> Biostrings::start() 
+	    tmp_ctg <- Biostrings::vmatchPattern(pattern='ctg', subject=Biostrings::DNAStringSet(seq_alt[over_1_ind])) |> Biostrings::start() 
 
 	    #- get the first one of each type
 	    tmp_atg <- tmp_atg |> lapply(min) |> suppressWarnings()
 	    tmp_ttg <- tmp_ttg |> lapply(min) |> suppressWarnings()
 	    tmp_ctg <- tmp_ctg |> lapply(min) |> suppressWarnings()
 
-	    #- get the first one for each sequence
+	    #- get the first one for each sequence (sci = start codon index)
 	    sci <- sapply(seq_len(tmp_atg |> length()), function(ind) min(c(tmp_atg[[ind]], tmp_ttg[[ind]], tmp_ctg[[ind]])))
 	 
 	    #- do we have sequences we need to drop? such a pain...
 	    inds_in <- (! is.infinite(sci)) |> which()
 	    if((inds_in |> length()) == 0){
-		    seq_alt_p_over1 = NULL
+            seq_alt_over_1 = NULL
+		    seq_alt_p_over_1 = NULL
 	    } else {
 		    sci <- sci[inds_in]
-		    seq_alt_p_over1 <- seq_alt[ind_over_1][inds_in] |> Biostrings::DNAStringSet() |>
-		 						    Biostrings::subseq(sci)    |> 
-		 						    Biostrings::translate()    |> 
+            seq_alt_over_1   <- seq_alt[over_1_ind][inds_in] |> Biostrings::DNAStringSet()  |>
+                                    Biostrings::subseq(sci)                                 |>
+                                    suppressWarnings()
+		    seq_alt_p_over_1 <- seq_alt_over_1 |> Biostrings::translate()                   |> 
 								    suppressWarnings()
 	     }
     }
 
-    #- seq_alt_p: conatenate and restore order, drop sequences without start codon 
+    #- seq_alt_p: conatenate and restore order, 
+    #- drop sequences without start codon 
     ind_in <- seq_len(evr_ind_idl |> length())
-    if( (n_over_1 > 0) && ( n_nover1 > 0) ){ #- both types
-	#-concatenating the NULL works
-  	    seq_alt_p <- c(seq_alt_p_nover1, seq_alt_p_over1)
-	    ind_in    <- c(ind_nover1, ind_over_1[inds_in])
-    } else if(n_over_1 > 0){ #- only start-overlapping
-	    seq_alt_p <- seq_alt_p_over1
-    	ind_in    <-  ind_over_1[inds_in]
-    } else if(n_nover1 > 0){ #- no start-overlapping
-	    seq_alt_p <- seq_alt_p_nover1
-	    ind_in    <- ind_nover1
+    if( (num_over_1 > 0) && ( num_n_over_1 > 0) ){ #- both types
+	    #-concatenating the NULL works
+        message("a")
+  	    seq_alt_p <- c(seq_alt_p_n_over_1, seq_alt_p_over_1)
+        seq_alt   <- c(seq_alt_n_over_1, seq_alt_over_1)
+	    ind_in    <- c(n_over_1_ind, over_1_ind[inds_in])
+        sci       <- c(rep(1, num_n_over_1),sci)
+    } else if(num_over_1 > 0){ #- only start-overlapping
+    message("b")
+	    seq_alt_p <- seq_alt_p_over_1
+        seq_alt   <- seq_alt_over_1
+    	ind_in    <- over_1_ind[inds_in]
+        sci       <- sci
+    } else if(num_n_over_1 > 0){ #- no start-overlapping
+    message("c")
+	    seq_alt_p <- seq_alt_p_n_over_1
+        seq_alt   <- seq_alt_n_over_1 
+	    ind_in    <- n_over_1_ind
+        sci       <-  rep(1, num_n_over_1)
     }
 
-    #- restory order
+    #- restore order
     ord       <- order(ind_in)
     ind_in    <- ind_in[ord]
+    seq_alt   <- seq_alt[ord]
     seq_alt_p <- seq_alt_p[ord]
+    
 
     #-subset all relevant quantities to reflect omission of non-start alternatives
     evr_ind_idl <- evr_ind_idl[ind_in]
-    exn_ind_idl <- exn_ind_idl[ind_in]
-    seq_alt     <- seq_alt[ind_in] #- don't think we need to do that, actually
+    exn_ind_idl <- exn_ind_idl[ind_in] #- can still be a LIST
 
     #- now we can look for stop codons
     #---------------------------------
@@ -219,9 +298,9 @@ annotate_vars_by_tx_idl <- function(txname, vars, exn, exn_x_vrs, css_prox_dist 
         }
     }) |> unlist()
 
-    #- ptc does not contain "original" stop codon.
+    #- ptc does not contain "original" stop codon at the end of the seuence
     #  the corner cases here that we miss contain indels affecting the
-    #  last reference codon
+    #  last reference codon and wrongly throw them out...
     ptc_pos <- stop_pos
     ptc_pos[stop_pos == Biostrings::width(seq_alt_p)] <- NA
 
@@ -229,11 +308,13 @@ annotate_vars_by_tx_idl <- function(txname, vars, exn, exn_x_vrs, css_prox_dist 
     #----------------------------------------
     #- now we need the updated exon boundaries in CDS/codon coordinates and TX coordinates.
     #  since all variants are contained in one exon, we just need to update that.
+    #  dw = delta width
 
     d_w <- vars[evr_ind_idl]$alt |> Biostrings::width() -
         vars[evr_ind_idl]$ref |> Biostrings::width()
 
-    afu <- function(ptc_pos, exn_ind, d_w, num_exn, txname, 
+    #- exn_inds: exons (in the reference! that get ovdrlapped by variant.)
+    afu <- function(txname, exn_sta_t, exn_end_t, exn_inds, num_exn, d_w, sci, ptc_pos, 
                     css_prox_dist, penultimate_prox_dist){
         #-----------------------------------------------
         #- if ptc_pos is NA we return FALSE
@@ -242,41 +323,41 @@ annotate_vars_by_tx_idl <- function(txname, vars, exn, exn_x_vrs, css_prox_dist 
             names(res) <- c("is_ptc","is_last", "is_penultimate", "is_cssProximal", "is_single", "is_407plus")
             return(res)
         }
-        #- new exon boundaries (in cds/codon space), don't currently need it though
-        exn_sta_p_alt <- exn_sta_p
-        exn_end_p_alt <- exn_end_p
-        inds          <- exn_ind : length(exn)
-        delt          <- (d_w + (exn_end_p_nc[inds] %% 3) ) %/% 3
-
-        exn_sta_p_alt[inds[-1]] <- exn_sta_p_alt[inds[-1]] + delt[-1]
-        exn_end_p_alt[inds]     <- exn_end_p_alt[inds]     + delt
-
-        #- new exon boundaries (in tx/nuc space), easier
-        exn_sta_t_alt <- exn_sta_t
-        exn_end_t_alt <- exn_end_t
-        inds          <- exn_ind : length(exn)
-        delt          <- rep(d_w, length(inds))
-
-        exn_sta_t_alt[inds[-1]] <- exn_sta_t_alt[inds[-1]] + delt[-1]
-        exn_end_t_alt[inds]     <- exn_end_t_alt[inds]     + delt
+       
+        #argg <- c(as.list(environment()))
+        #print(argg)
+        #- Get exon boundaries in alternative sequence (note, we start at the new CSS)
+        tmp <- mev_alt_exn_bnd(exn_sta_t, exn_end_t, exn_inds, d_w, sci)
+        exn_sta_t_alt <- tmp$exn_sta_t_alt
+        exn_end_t_alt <- tmp$exn_end_t_alt
 
         #- find the exon that contains the PTC (not necessarily the variant)
-        exn_ind_ptc <- (exn_sta_p_alt <= ptc_pos) |> which() |> max()
+        #  note, if the PTC overlaps multiple exons, we use the 3'-most.
+        ptc_coords_alt_t <- (ptc_pos-1)*3 + 1:3
+        exn_ind_ptc <- (exn_end_t_alt >= ptc_coords_alt_t[3]) |> which() |> min()
+
         #- location of ptc in that exon
-        #ptc_loc <- ptc_pos - exn_sta_p[exn_ind_ptc] + 1
         apply_nmd_escape_rules(ptc_pos, exn_ind_ptc, exn_sta_t_alt[exn_ind_ptc],
                                 exn_end_t_alt[exn_ind_ptc], num_exn, txname,
                                 css_prox_dist = css_prox_dist, penultimate_prox_dist = penultimate_prox_dist)
     }
 
-    tbl_idl <- purrr::pmap_dfr( list( ptc_pos = ptc_pos,
-                                      exn_ind = exn_ind_idl,
-                                      d_w     = d_w,
-                                      num_exn = length(exn_sta_p),
-				                      txname  = txname,
-                                      css_prox_dist = css_prox_dist,
-                                      penultimate_prox_dist = penultimate_prox_dist),
-                                afu)
+    tmp <- lapply(seq_len(vars |> length()), function(var_ind) afu(
+                                        txname    = txname,
+                                        exn_sta_t = exn_sta_t,
+                                        exn_end_t = exn_end_t,
+                                        exn_inds  = exn_ind_idl[[var_ind]], #- can a vector
+                                        num_exn   = length(exn_sta_t),
+                                        d_w       = d_w[var_ind],
+                                        sci       = sci[var_ind],
+                                        ptc_pos   = ptc_pos[var_ind],
+                                        css_prox_dist = css_prox_dist,
+                                        penultimate_prox_dist = penultimate_prox_dist))
+
+    #conversion 
+    mat <- tmp |> unlist() |> matrix(ncol = 6, byrow = TRUE) 
+    colnames(mat) <- names(tmp[[1]])
+    tbl_idl <- tibble::as_tibble(mat)
 
     if(detailed){
         tbl_idl <- tbl_idl |> dplyr::mutate(

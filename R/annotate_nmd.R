@@ -1,41 +1,19 @@
 
-#' Read in vcf file, make GRanges object.
-#'
-#' Uses vcfR package. Keep only bare-bone info from vcf.
-#' @param vcf_filename String. Filename of vcf file.
-#' @param pass_only Logical. Keep only entries where FILTER = PASS
-parse_vcf <- function(vcf_filename, pass_only = TRUE){
-#=====================================================
-
-    vcf      <- vcfR::read.vcfR(vcf_filename)
-    vcf_rng  <- GenomicRanges::GRanges(vcfR::getCHROM(vcf),
-                                       IRanges::IRanges(vcfR::getPOS(vcf),
-                                                        vcfR::getPOS(vcf)))
-    vcf_rng$ref     <- vcfR::getREF(vcf) |> Biostrings::DNAStringSet()
-    vcf_rng$alt     <- vcfR::getALT(vcf) |> Biostrings::DNAStringSet()
-    vcf_rng$id      <- vcfR::getID(vcf)
-    vcf_rng$filter  <- vcfR::getFILTER(vcf)
-    vcf_rng$qual    <- vcfR::getQUAL(vcf)
-    GenomeInfoDb::seqlevelsStyle(vcf_rng) <- 'NCBI'
-
-    if(pass_only){
-        vcf_rng <- vcf_rng[vcf_rng$filter == 'PASS']
-    }
-
-    return(vcf_rng)
-}
-
 #' Filters / processes variants
 #' @param vcf_rng GRanges object of variants. Start is first base of variant.
 #'            Each variant is of length 1.
 #'            Each variant has an ``ref`` and ``alt`` metadata column with DNAStringSets of the sequences.
 #' @param check_ref Logical. Should the reference alleles be checked against assembly.
+#' @param genome Depends. BSgenome for checking reference, if \code{check_ref == TRUE}, \code{NA} otherwise.
 #' @param verbose Logical. Report progress.
 #' @return List.
 #' @importFrom utils head tail
 #' @examples
 #' @export
-process_variants <- function(vcf_rng, check_ref = FALSE, verbose = TRUE){
+process_variants <- function(vcf_rng, 
+                             check_ref = FALSE, 
+                             genome    = ifelse(check_ref, BSgenome.Hsapiens.NCBI.GRCh38::Hsapiens, NA), 
+                             verbose   = TRUE){
 
     if(verbose) message("Processing variants.")
 
