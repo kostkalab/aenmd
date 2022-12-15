@@ -32,11 +32,11 @@ annotate_vars_by_tx_snv <- function(txname, vars, exn, exn_x_vrs, css_prox_dist 
     exn_end_g <- GenomicRanges::end(exn)
     exn_sta_t <- c(1, cumsum(GenomicRanges::width(exn))[-length(exn)]+1)
     exn_end_t <- cumsum(GenomicRanges::width(exn))
-    #exn_sta_p <- (exn_sta_t -1) %/% 3 + 1
-    #exn_end_p <- (exn_end_t -1) %/% 3 + 1
+    exn_sta_p <- (exn_sta_t -1) %/% 3 + 1
+    exn_end_p <- (exn_end_t -1) %/% 3 + 1
     #- which nucleotide in codon: 1, 2 or 3
-    #exn_sta_p_nc <- (exn_sta_t -1) %% 3 + 1
-    #exn_end_p_nc <- (exn_end_t -1) %% 3 + 1
+    exn_sta_p_nc <- (exn_sta_t -1) %% 3 + 1
+    exn_end_p_nc <- (exn_end_t -1) %% 3 + 1
 
     #------
     #- All SNVs are PTC-generating (others have been filtered out)
@@ -257,25 +257,23 @@ annotate_vars_by_tx_idl <- function(txname, vars, exn, exn_x_vrs, css_prox_dist 
     ind_in <- seq_len(evr_ind_idl |> length())
     if( (num_over_1 > 0) && ( num_n_over_1 > 0) ){ #- both types
 	    #-concatenating the NULL works
-        message("a")
   	    seq_alt_p <- c(seq_alt_p_n_over_1, seq_alt_p_over_1)
         seq_alt   <- c(seq_alt_n_over_1, seq_alt_over_1)
 	    ind_in    <- c(n_over_1_ind, over_1_ind[inds_in])
         sci       <- c(rep(1, num_n_over_1),sci)
     } else if(num_over_1 > 0){ #- only start-overlapping
-    message("b")
 	    seq_alt_p <- seq_alt_p_over_1
         seq_alt   <- seq_alt_over_1
     	ind_in    <- over_1_ind[inds_in]
         sci       <- sci
     } else if(num_n_over_1 > 0){ #- no start-overlapping
-    message("c")
 	    seq_alt_p <- seq_alt_p_n_over_1
         seq_alt   <- seq_alt_n_over_1 
 	    ind_in    <- n_over_1_ind
         sci       <-  rep(1, num_n_over_1)
     }
 
+    
     #- restore order
     ord       <- order(ind_in)
     ind_in    <- ind_in[ord]
@@ -314,7 +312,7 @@ annotate_vars_by_tx_idl <- function(txname, vars, exn, exn_x_vrs, css_prox_dist 
         vars[evr_ind_idl]$ref |> Biostrings::width()
 
     #- exn_inds: exons (in the reference! that get ovdrlapped by variant.)
-    afu <- function(txname, exn_sta_t, exn_end_t, exn_inds, num_exn, d_w, sci, ptc_pos, 
+    afu <- function(txname, exn_sta_t, exn_end_t, exn_inds, num_exn, d_w, sci, ptc_pos, alt_seq,
                     css_prox_dist, penultimate_prox_dist){
         #-----------------------------------------------
         #- if ptc_pos is NA we return FALSE
@@ -337,12 +335,23 @@ annotate_vars_by_tx_idl <- function(txname, vars, exn, exn_x_vrs, css_prox_dist 
         exn_ind_ptc <- (exn_end_t_alt >= ptc_coords_alt_t[3]) |> which() |> min()
 
         #- location of ptc in that exon
-        apply_nmd_escape_rules(ptc_pos, exn_ind_ptc, exn_sta_t_alt[exn_ind_ptc],
+        res <- apply_nmd_escape_rules(ptc_pos, exn_ind_ptc, exn_sta_t_alt[exn_ind_ptc],
                                 exn_end_t_alt[exn_ind_ptc], num_exn, txname,
                                 css_prox_dist = css_prox_dist, penultimate_prox_dist = penultimate_prox_dist)
+        #- FIXME: add these 
+        if(FALSE){
+            res                 <- as.list(res)
+            res$seq_alt_p       <- alt_seq_p[1:ptc_pos] #- alternative coding sequence 
+            res$seq_alt_p_start <- sci #- position of new CSS in alternative sequence
+            res$seq_alt_p_end   <- ptc_pos #- AA position of TER in alternative sequence, starting at (potentially new) CSS.
+            res$exn_sta_alt     <- exn_sta_t_alt #- with "alternative" CSS
+            res$exn_end_alt     <- exn_end_t_alt #- with "alternative" CSS
+        }
+
+        return(res)
     }
 
-    tmp <- lapply(seq_len(vars |> length()), function(var_ind) afu(
+    tmp <- lapply(seq_len( vars[evr_ind_idl] |> length()), function(var_ind) afu(
                                         txname    = txname,
                                         exn_sta_t = exn_sta_t,
                                         exn_end_t = exn_end_t,
@@ -354,9 +363,10 @@ annotate_vars_by_tx_idl <- function(txname, vars, exn, exn_x_vrs, css_prox_dist 
                                         css_prox_dist = css_prox_dist,
                                         penultimate_prox_dist = penultimate_prox_dist))
 
-    #conversion 
+    #conversion; FIXME: does not work for tmp where tmp is a list of lists that cannnot be coerced to a matrix...
     mat <- tmp |> unlist() |> matrix(ncol = 6, byrow = TRUE) 
     colnames(mat) <- names(tmp[[1]])
+
     tbl_idl <- tibble::as_tibble(mat)
 
     if(detailed){
@@ -365,7 +375,6 @@ annotate_vars_by_tx_idl <- function(txname, vars, exn, exn_x_vrs, css_prox_dist 
             tx_id = exn$tx_id[exn_ind_idl],
             exn_id = exn$exon_id[exn_ind_idl]) #- this is not the ptc exon but the variant exon
     }
-    
     return(list(vars_idl = vars[evr_ind_idl], tbl_idl = tbl_idl))
 }
 
@@ -419,7 +428,7 @@ annotate_variants_by_tx <- function( txname, vars, css_prox_dist = 150L,
     } else {
         #- return SNVs and INDELs
         res <- c(res_snv$vars_snv, res_idl$vars_idl)
-        dfr <- rbind(res_snv$tbl_snv, res_idl$tbl_idl) |> S4Vectors::DataFrame()
+        dfr <- dplyr::bind_rows(res_snv$tbl_snv, res_idl$tbl_idl) |> S4Vectors::DataFrame()
         S4Vectors::mcols(res)$res_aenmd <- dfr
         return(res)
     }
