@@ -159,17 +159,26 @@ annotate_vars_by_tx_idl <- function(txname, vars, exn, exn_x_vrs, css_prox_dist 
     over_3p_ind <-  over_3p_lgl |> which()
 
     #- find maximum overhangs
-    over_5p <- ref_nuc_sta |> (\(x) (-1)* (min(x) -1))()       |> (\(x) pmax(x,0))()
-    over_3p <- ref_nuc_end |> (\(x) max(x) - max(exn_end_t))() |> (\(x) pmax(x,0))()
+    over_5p <- ( (-1)*(ref_nuc_sta - 1) )      |> pmax(0)
+    #over_3p <- ref_nuc_end |> (\(x) max(x) - max(exn_end_t))() |> (\(x) pmax(x,0))()
+    over_3p <- ( ref_nuc_end - max(exn_end_t) ) |> pmax(0)
+
 
     max_over_5p_val <- max(over_5p)
-    max_over_5p_ind <- which.max(over_5p) #- it is okay if there are more than one, can take any. (reference is the same)
-    max_over_3p_val <- max(over_3p)
-    max_over_3p_ind <- which.max(over_3p) #- gain, if there are many, any of them will do. (reference is the same)
-
-    #- Append sequence on the 5' and fix ref_nuc_sta, and the exon starts
     if(max_over_5p_val > 0){
-        over_seq    <- vars[max_over_5p_ind]$ref |> Biostrings::subseq(1L, max_over_5p_val)
+        max_over_5p_ind <- which.max(over_5p) #- it is okay if there are more than one, can take any. (reference is the same)
+    } else {
+        max_over_5p_ind <- vector(length = 0, mode='integer')
+    }
+    max_over_3p_val <- max(over_3p)
+    if(max_over_3p_val > 0){
+        max_over_3p_ind <- which.max(over_3p) #- gain, if there are many, any of them will do. (reference is the same)
+    } else {
+        max_over_3p_ind <- vector(length = 0, mode='integer')
+    }
+    #- Append sequence on the 5' and fix ref_nuc_sta (to be positive), and the exon starts
+    if(max_over_5p_val > 0){
+        over_seq    <- vars[evr_ind_idl][max_over_5p_ind]$ref |> Biostrings::subseq(1L, max_over_5p_val)
         if( (GenomicRanges::strand(exn) == "-") |> all()) over_seq <- over_seq |> Biostrings::reverseComplement()
         seq_ref     <- Biostrings::xscat(over_seq,seq_ref)[[1]]
         ref_nuc_sta <- ref_nuc_sta + max_over_5p_val 
@@ -177,13 +186,12 @@ annotate_vars_by_tx_idl <- function(txname, vars, exn, exn_x_vrs, css_prox_dist 
         exn_sta_t   <- exn_sta_t + max_over_5p_val
         exn_end_t   <- exn_end_t + max_over_5p_val
     }
-    #- Append sequence on the 3' and fix ref_nuc_end
+    #- Append sequence on the 3' end, ref_nuc_end us already correct
     if(max_over_3p_val > 0){
-        refwidth    <- vars[max_over_3p_ind]$ref |> width()
-        over_seq    <- vars[max_over_3p_ind]$ref |> Biostrings::subseq(refwidth - max_over_3p_val - 1, refwidth)
+        refwidth    <- vars[evr_ind_idl][max_over_3p_ind]$ref |> Biostrings::width()
+        over_seq    <- vars[evr_ind_idl][max_over_3p_ind]$ref |> Biostrings::subseq(refwidth - max_over_3p_val +1, refwidth)
         if( (GenomicRanges::strand(exn) == "-") |> all()) over_seq <- over_seq |> Biostrings::reverseComplement()
         seq_ref     <- Biostrings::xscat(seq_ref, over_seq)[[1]]
-        ref_nuc_end <- ref_nuc_end + max_over_3p_val
     }
 
 
