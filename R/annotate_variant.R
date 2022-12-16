@@ -268,7 +268,7 @@ annotate_vars_by_tx_idl <- function(txname, vars, exn, exn_x_vrs, css_prox_dist 
   	    seq_alt_p <- c(seq_alt_p_n_over_1, seq_alt_p_over_1)
         seq_alt   <- c(seq_alt_n_over_1, seq_alt_over_1)
 	    ind_in    <- c(n_over_1_ind, over_1_ind[inds_in])
-        sci       <- c(rep(1, num_n_over_1),sci)
+        sci       <- c(rep(1+max_over_5p_val, num_n_over_1),sci) #- need to add the 5'overhang to sci here!
     } else if(num_over_1 > 0){ #- only start-overlapping
 	    seq_alt_p <- seq_alt_p_over_1
         seq_alt   <- seq_alt_over_1
@@ -287,7 +287,7 @@ annotate_vars_by_tx_idl <- function(txname, vars, exn, exn_x_vrs, css_prox_dist 
     ind_in    <- ind_in[ord]
     seq_alt   <- seq_alt[ord]
     seq_alt_p <- seq_alt_p[ord]
-    
+    sci       <- sci[ord]
 
     #-subset all relevant quantities to reflect omission of non-start alternatives
     evr_ind_idl <- evr_ind_idl[ind_in]
@@ -368,6 +368,7 @@ annotate_vars_by_tx_idl <- function(txname, vars, exn, exn_x_vrs, css_prox_dist 
                                         d_w       = d_w[var_ind],
                                         sci       = sci[var_ind],
                                         ptc_pos   = ptc_pos[var_ind],
+                                        alt_seq   = seq_alt_p[[var_ind]],
                                         css_prox_dist = css_prox_dist,
                                         penultimate_prox_dist = penultimate_prox_dist))
 
