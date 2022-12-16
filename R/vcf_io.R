@@ -37,8 +37,8 @@ parse_vcf_VariantAnnotation<- function(vcf_filename, pass_only = TRUE, verbose =
 
     if(verbose) message('Reading in vcf file ...', appendLF = FALSE)
     vcf        <- VariantAnnotation::readVcf(vcf_filename)
-    vcf        <- expand(vcf)
-    vcf_rng    <- rowRanges(vcf)
+    vcf        <- VariantAnnotation::expand(vcf)
+    vcf_rng    <- rowRanges(vcf) #- FIXME: how do I use rowRanges from teh VariantAnnotation::class:VCF here?
     vcf_rng$ID <- names(vcf_rng)
     if(verbose) message(' done.')
 
@@ -57,7 +57,7 @@ parse_vcf_VariantAnnotation<- function(vcf_filename, pass_only = TRUE, verbose =
     }
 
     #- we lower-case, clean up 
-    colnames(vcf_rng) <- colnames(vcf_rng) |> janitor::make_clean_names()
+    colnames(mcols(vcf_rng)) <- colnames(mcols(vcf_rng)) |> janitor::make_clean_names()
     
 if(verbose) message(' done.')
 
