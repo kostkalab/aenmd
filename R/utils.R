@@ -103,6 +103,12 @@ mev_alt_exn_bnd <- function(exn_sta_t, exn_end_t, exn_inds, d_w, sci){
                 exn_inds <- exn_ind_5p
         }
 
+        #- repair first exon boundary for 5' overhaning variants
+        if( (min(inds) == 1) && (exn_sta_t[1] != 1)){
+                overhang <- exn_sta_t[1] -1 
+                exn_sta_t_alt[1] <- 1
+                d_w <- sign(d_w) * (abs(d_w) - overhang) #- keep outside CDS bases the same for ref and alt
+        }
         #- new exon boundaries (in tx/nuc space)
         inds          <- exn_ind_5p : length(exn_sta_t_alt)
         delt          <- rep(d_w, length(inds))
