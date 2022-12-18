@@ -340,8 +340,16 @@ annotate_vars_by_tx_idl <- function(txname, vars, exn, exn_x_vrs, css_prox_dist 
         #- find the exon that contains the PTC (not necessarily the variant)
         #  note, if the PTC overlaps multiple exons, we use the 3'-most.
         ptc_coords_alt_t <- (ptc_pos-1)*3 + 1:3
-        exn_ind_ptc <- (exn_end_t_alt >= ptc_coords_alt_t[3]) |> which() |> min()
-
+        if(( (exn_end_t_alt >= ptc_coords_alt_t[3]) |> sum() ) > 0 ){
+            #- have a "real" PTC
+            exn_ind_ptc <- (exn_end_t_alt >= ptc_coords_alt_t[3]) |> which() |> min()
+        } else {
+            #- e.g., PTC was found in sequence related to another variant that is not present in this variant
+            ptc_pos <- NA
+            res <- rep(FALSE, 6)
+            names(res) <- c("is_ptc","is_last", "is_penultimate", "is_cssProximal", "is_single", "is_407plus")
+            return(res)
+        }
         #- location of ptc in that exon
         res <- apply_nmd_escape_rules(ptc_pos, exn_ind_ptc, exn_sta_t_alt[exn_ind_ptc],
                                 exn_end_t_alt[exn_ind_ptc], num_exn, txname,

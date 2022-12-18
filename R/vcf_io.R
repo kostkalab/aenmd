@@ -32,7 +32,7 @@ parse_vcf_vcfR <- function(vcf_filename, pass_only = TRUE){
 #' @param pass_only Logical. Keep only entries where FILTER = PASS
 #' @param verbose Logicale. Report progress.
 #' @return List. \code{vcf_rng} contains the fixed part of the vcf-file as GRanges. \code{vcf} is the complete \code{vcfR::vcfR} object.
-parse_vcf_VariantAnnotation<- function(vcf_filename, pass_only = TRUE, verbose = TRUE){
+parse_vcf_VariantAnnotation<- function(vcf_filename, verbose = TRUE){
 #==========================================================
 
     if(verbose) message('Reading in vcf file ...', appendLF = FALSE)
@@ -44,17 +44,17 @@ parse_vcf_VariantAnnotation<- function(vcf_filename, pass_only = TRUE, verbose =
 
     #- don't really know why this is necessary, but sometimes does not work otherwise
 
-    if(verbose) message('Creating GRanges ...', appendLF = FALSE)
-    gn <- GenomeInfoDb::genome(vcf_rng) |> unique()
-    GenomeInfoDb::genome(vcf_rng) <- NA
-    GenomeInfoDb::seqlevelsStyle(vcf_rng) <- 'NCBI'
-    GenomeInfoDb::genome(vcf_rng) <- gn
+   # if(verbose) message('Creating GRanges ...', appendLF = FALSE)
+   # gn <- GenomeInfoDb::genome(vcf_rng) |> unique()
+   # GenomeInfoDb::genome(vcf_rng) <- NA
+   # GenomeInfoDb::seqlevelsStyle(vcf_rng) <- 'NCBI'
+   # GenomeInfoDb::genome(vcf_rng) <- gn
 
-    if(pass_only){
-        ind     <- vcf_rng$FILTER == 'PASS'
-        vcf_rng <- vcf_rng[ind]
-        vcf     <- vcf[ind]
-    }
+   #if(pass_only){
+    #    ind     <- vcf_rng$FILTER == 'PASS'
+    #    vcf_rng <- vcf_rng[ind]
+    ##    vcf     <- vcf[ind]
+    #}
 
     #- we lower-case, clean up 
     colnames(mcols(vcf_rng)) <- colnames(mcols(vcf_rng)) |> janitor::make_clean_names()
