@@ -29,9 +29,9 @@ parse_vcf_vcfR <- function(vcf_filename, pass_only = TRUE){
 #'
 #' Uses VariantAnnotation package.
 #' @param vcf_filename String. Filename of vcf file.
-#' @param pass_only Logical. Keep only entries where FILTER = PASS
 #' @param verbose Logicale. Report progress.
 #' @return List. \code{vcf_rng} contains the fixed part of the vcf-file as GRanges. \code{vcf} is the complete \code{vcfR::vcfR} object.
+#' @importClassesFrom VariantAnnotation VCF
 parse_vcf_VariantAnnotation<- function(vcf_filename, verbose = TRUE){
 #==========================================================
 
@@ -57,7 +57,7 @@ parse_vcf_VariantAnnotation<- function(vcf_filename, verbose = TRUE){
     #}
 
     #- we lower-case, clean up 
-    colnames(mcols(vcf_rng)) <- colnames(mcols(vcf_rng)) |> janitor::make_clean_names()
+    colnames(S4Vectors::mcols(vcf_rng)) <- colnames(S4Vectors::mcols(vcf_rng)) |> janitor::make_clean_names()
     
 if(verbose) message(' done.')
 

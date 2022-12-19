@@ -4,12 +4,12 @@
 \alias{parse_vcf_VariantAnnotation}
 \title{Simple wrapper to read in in vcf file, make GRanges object.}
 \usage{
-parse_vcf_VariantAnnotation(vcf_filename, pass_only = TRUE, verbose = TRUE)
+parse_vcf_VariantAnnotation(vcf_filename, verbose = TRUE)
 }
 \arguments{
 \item{vcf_filename}{String. Filename of vcf file.}
 
-\item{pass_only}{Logical. Keep only entries where FILTER = PASS}
+\item{verbose}{Logicale. Report progress.}
 }
 \value{
 List. \code{vcf_rng} contains the fixed part of the vcf-file as GRanges. \code{vcf} is the complete \code{vcfR::vcfR} object.

@@ -338,9 +338,13 @@ annotate_vars_by_tx_idl <- function(txname, vars, exn, exn_x_vrs, css_prox_dist 
         exn_end_t_alt <- tmp$exn_end_t_alt
 
         #- find the exon that contains the PTC (not necessarily the variant)
-        #  note, if the PTC overlaps multiple exons, we use the 3'-most.
+        #- note, if the PTC overlaps multiple exons, we use the 3'-most.
+        #- note, since the reference sequence can have 5' and 3' overhang, we need to 
+        #  check that the ptc is contained in the alternative exons of this variant.
         ptc_coords_alt_t <- (ptc_pos-1)*3 + 1:3
-        if(( (exn_end_t_alt >= ptc_coords_alt_t[3]) |> sum() ) > 0 ){
+        cnd1 <- ptc_coords_alt_t[3] <= max(exn_end_t_alt)
+        cnd2 <- ptc_coords_alt_t[1] >= min(exn_sta_t_alt)
+        if( cnd1 && cnd2 ){
             #- have a "real" PTC
             exn_ind_ptc <- (exn_end_t_alt >= ptc_coords_alt_t[3]) |> which() |> min()
         } else {
