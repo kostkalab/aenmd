@@ -38,7 +38,7 @@ parse_vcf_VariantAnnotation<- function(vcf_filename, verbose = TRUE){
     if(verbose) message('Reading in vcf file ...', appendLF = FALSE)
     vcf        <- VariantAnnotation::readVcf(vcf_filename)
     vcf        <- VariantAnnotation::expand(vcf)
-    vcf_rng    <- rowRanges(vcf) #- FIXME: how do I use rowRanges from teh VariantAnnotation::class:VCF here?
+    vcf_rng    <- SummarizedExperiment::rowRanges(vcf) #- FIXME: how do I use rowRanges from VariantAnnotation::class:VCF here?
     vcf_rng$ID <- names(vcf_rng)
     if(verbose) message(' done.')
 

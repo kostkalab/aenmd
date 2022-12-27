@@ -45,6 +45,20 @@ annotate_vars_by_tx_snv <- function(txname, vars, exn, exn_x_vrs, css_prox_dist 
     if( length(evr_ind_snv) == 0 ){ #- already done here
         return(NULL)
     }
+    #- We need to check, though, if the SNV generates a stop
+    #  *in the current transcript*.
+    kys        <- vars[evr_ind_snv]$key
+    is_ptc_snv <- triebeard::longest_match(future::value(._EA_snv_tri) ,kys) |>
+                  stringr::str_detect(pattern=txname)
+    evr_ind_snv_ysPtc <- evr_ind_snv[is_ptc_snv]
+    evr_ind_snv_noPtc <- evr_ind_snv[!is_ptc_snv]
+
+    #- FIXME: silently drop non-PTC-generating SNVs for the transcript
+    evr_ind_snv <- evr_ind_snv_ysPtc
+    if(length(evr_ind_snv) == 0){
+        return(NULL) #- FIXME; works currently but needs cleanup, also other cases..
+    }
+
     #- exons for SNVs
     exn_ind_snv <- exn_x_vrs[evr_ind_snv |> as.character()]
     #- SNVS should not span multiple exons
@@ -199,10 +213,10 @@ annotate_vars_by_tx_idl <- function(txname, vars, exn, exn_x_vrs, css_prox_dist 
     #---------------------------------
     alt_vrs <- vars$alt[evr_ind_idl]
     if(all(GenomicRanges::strand(exn)=="-")) alt_vrs <- Biostrings::reverseComplement(alt_vrs)
-    make_alt <- function(ref_nuc_sta, ref_nuc_end, alt, seq_ref){
+    make_alt <- function(over_5p, max_over_5p_val, ref_nuc_sta, ref_nuc_end, over_3p, max_over_3p_val, alt, seq_ref){
         if(ref_nuc_sta < length(seq_ref)) {
-            Biostrings::xscat(Biostrings::subseq(seq_ref, 1, ref_nuc_sta -1), alt,
-                          Biostrings::subseq(seq_ref, ref_nuc_end +1, length(seq_ref)))[[1]]
+            Biostrings::xscat(Biostrings::subseq(seq_ref, 1 + max_over_5p_val - over_5p, ref_nuc_sta -1), alt,
+                          Biostrings::subseq(seq_ref, ref_nuc_end +1, length(seq_ref) - max_over_3p_val + over_3p ))[[1]]
         } else if (ref_nuc_sta == length(seq_ref)){
             Biostrings::xscat(Biostrings::subseq(seq_ref, 1, ref_nuc_sta -1), alt)[[1]]
 
@@ -212,10 +226,14 @@ annotate_vars_by_tx_idl <- function(txname, vars, exn, exn_x_vrs, css_prox_dist 
     }
 
     seq_alt <- sapply(seq_len(length(evr_ind_idl)),
-                      function(ind) make_alt(ref_nuc_sta = ref_nuc_sta[ind],
+                      function(ind) make_alt(over_5p = over_5p[ind],
+                                             max_over_5p_val = max_over_5p_val,
+                                             ref_nuc_sta = ref_nuc_sta[ind],
                                              ref_nuc_end[ind],
+                                             over_3p = over_3p[ind],
+                                             max_over_3p_val = max_over_3p_val,
                                              alt_vrs[ind],
-                                             seq_ref) )
+                                             seq_ref) ) |> Biostrings::DNAStringSet()
 
     #- Divvy out variants overlapping the start codon and treat
     #----------------------------------------------------------
@@ -228,14 +246,14 @@ annotate_vars_by_tx_idl <- function(txname, vars, exn, exn_x_vrs, css_prox_dist 
 
     if(num_n_over_1>0 ){
  	    #- translate right away
-   	    seq_alt_p_n_over_1 <- seq_alt[n_over_1_ind] |> Biostrings::DNAStringSet() |> Biostrings::translate() |> suppressWarnings()
+   	    seq_alt_p_n_over_1 <- seq_alt[n_over_1_ind]  |> Biostrings::translate() |> suppressWarnings()
         seq_alt_n_over_1   <- seq_alt[n_over_1_ind]
     } 
     if(num_over_1 > 0 ){
    	    #- find the start codons (if there are any)
-	    tmp_atg <- Biostrings::vmatchPattern(pattern='atg', subject=Biostrings::DNAStringSet(seq_alt[over_1_ind])) |> Biostrings::start() 
-	    tmp_ttg <- Biostrings::vmatchPattern(pattern='ttg', subject=Biostrings::DNAStringSet(seq_alt[over_1_ind])) |> Biostrings::start() 
-	    tmp_ctg <- Biostrings::vmatchPattern(pattern='ctg', subject=Biostrings::DNAStringSet(seq_alt[over_1_ind])) |> Biostrings::start() 
+	    tmp_atg <- Biostrings::vmatchPattern(pattern='atg', subject=seq_alt[over_1_ind]) |> Biostrings::start() 
+	    tmp_ttg <- Biostrings::vmatchPattern(pattern='ttg', subject=seq_alt[over_1_ind]) |> Biostrings::start() 
+	    tmp_ctg <- Biostrings::vmatchPattern(pattern='ctg', subject=seq_alt[over_1_ind]) |> Biostrings::start() 
 
 	    #- get the first one of each type
 	    tmp_atg <- tmp_atg |> lapply(min) |> suppressWarnings()
@@ -344,6 +362,7 @@ annotate_vars_by_tx_idl <- function(txname, vars, exn, exn_x_vrs, css_prox_dist 
         ptc_coords_alt_t <- (ptc_pos-1)*3 + 1:3
         cnd1 <- ptc_coords_alt_t[3] <= max(exn_end_t_alt)
         cnd2 <- ptc_coords_alt_t[1] >= min(exn_sta_t_alt)
+        #- NOTE: Don't think we need that check any more. FIXME.
         if( cnd1 && cnd2 ){
             #- have a "real" PTC
             exn_ind_ptc <- (exn_end_t_alt >= ptc_coords_alt_t[3]) |> which() |> min()
