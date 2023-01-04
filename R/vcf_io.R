@@ -19,7 +19,7 @@ parse_vcf_vcfR <- function(vcf_filename, pass_only = TRUE){
     GenomeInfoDb::seqlevelsStyle(vcf_rng) <- 'NCBI'
 
     if(pass_only){
-        vcf_rng <- vcf_rng[vcf_rng$FILTER == 'PASS']
+        vcf_rng <- vcf_rng[vcf_rng$filter == 'PASS']
     }
 
     return(list(vcf_rng = vcf_rng, vcf = vcf))
