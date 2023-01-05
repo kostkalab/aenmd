@@ -11,11 +11,14 @@ Often, mRNA from such altered transcripts is degraded by a process called [nonse
 ##### Installing `aenmd`
 
 ```
-aenmd_data_gh <-
-aenmd_gh      <- 
+> token1 <- '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'
+> token2 <- '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'
 
-> devtools::install_github(aenmd_data_gh)
-> devtools::install_github(aenmd_gh)
+> aenmd_data_gh <- 'kostkalab/aenmd.data.ensdb.v105'
+> aenmd_gh      <- 'kostkalab/aenmd'
+
+> devtools::install_github(aenmd_data_gh, auth_token = token1)
+> devtools::install_github(aenmd_gh, auth_token = token2)
 ```
 
 ##### Annotating variants for escape from NMD

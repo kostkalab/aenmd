@@ -137,3 +137,30 @@ mev_alt_exn_bnd <- function(exn_sta_t, exn_end_t, exn_inds, d_w, sci){
         return(list(exn_sta_t_alt = exn_sta_t_alt, exn_end_t_alt = exn_end_t_alt))
 }
 
+is_vcf_rng <- function(vcf_rng, check_key = FALSE){
+        pass <- TRUE
+        cn   <- S4Vectors::mcols(vcf_rng) |> colnames() #- colnames of the DataFrame
+
+        #- need 'ref' and 'alt' columns
+        if( sum(c('ref', 'alt') %in% cn) < 2 ) pass = FALSE
+
+        #- they need to be DNAStringSets
+        if( class(S4Vectors::mcols(vcf_rng)$ref) != 'DNAStringSet' ) pass = FALSE
+        if( class(S4Vectors::mcols(vcf_rng)$alt) != 'DNAStringSet' ) pass = FALSE
+
+        #- check that ranges have the correct length
+        if( ! all(GenomicRanges::width(vcf_rng) == Biostrings::width(vcf_rng$ref)) ) pass = FALSE
+
+        #- check that the keys are right (optional)
+        if(check_key){
+                if(! all(vcf_rng$key == make_keys(vcf_rng))) pass = FALSE
+        }
+
+        return(pass)
+}
+
+make_keys <- function(vcf_rng){
+        starts <- GenomicRanges::start(vcf_rng) |> stringr::str_pad(9L, pad="0")
+        keys <- paste0(GenomicRanges::seqnames(vcf_rng), ":", starts,"|" ,vcf_rng$ref, "|", vcf_rng$alt)
+        return(keys)
+}

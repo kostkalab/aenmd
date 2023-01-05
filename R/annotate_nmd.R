@@ -20,10 +20,12 @@ process_variants <- function(vcf_rng,
     #- using GRCh38 only for now
     hsap <- BSgenome.Hsapiens.NCBI.GRCh38::Hsapiens
 
-    #- expand the vcf ranges to contain first and last base of refrence allele
-    vcf_rng <-  GenomicRanges::resize(vcf_rng,
+    #- expand the vcf ranges to contain first and last base of reference allele
+    if( ! all(GenomicRanges::width(vcf_rng) == Biostrings::width(vcf_rng$ref)) ){
+        vcf_rng <-  GenomicRanges::resize(vcf_rng,
                                       width = Biostrings::width(vcf_rng$ref),
                                       fix="start")
+    }
 
     #- check if reference variants are legal
     if(check_ref){
@@ -42,10 +44,14 @@ process_variants <- function(vcf_rng,
     ov_ends   <- GenomicRanges::findOverlaps(GenomicRanges::resize(vcf_rng, width=1L, fix='end'),
                                              future::value(._EA_spl_grl))
 
-    out_idx  <- sort(c(unique(S4Vectors::queryHits(ov_starts)),
-                       unique(S4Vectors::queryHits(ov_ends))))
+    out_idx  <- c(unique(S4Vectors::queryHits(ov_starts)),
+                  unique(S4Vectors::queryHits(ov_ends))) |> sort() |> unique()
     if(length(out_idx)>0){
         vcf_rng  <- vcf_rng[-out_idx]
+    }
+
+    if(length(vcf_rng) == 0) {
+        return(vcf_rng)
     }
 
     #- make sure asll variants are *contained* within *one* of our exons
@@ -57,7 +63,7 @@ process_variants <- function(vcf_rng,
     }
 
     #- Classify ins, del, sbs, assign key; snv for
-    vcf_rng$type                                                                   <- NA
+    vcf_rng$type                                                                   <- NULL
     vcf_rng$type[Biostrings::width(vcf_rng$ref) >  Biostrings::width(vcf_rng$alt)] <- 'del'
     vcf_rng$type[Biostrings::width(vcf_rng$ref) <  Biostrings::width(vcf_rng$alt)] <- 'ins'
     vcf_rng$type[Biostrings::width(vcf_rng$ref) == Biostrings::width(vcf_rng$alt)] <- 'sbs'

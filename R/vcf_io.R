@@ -29,14 +29,15 @@ parse_vcf_vcfR <- function(vcf_filename, pass_only = TRUE){
 #'
 #' Uses VariantAnnotation package.
 #' @param vcf_filename String. Filename of vcf file.
-#' @param verbose Logicale. Report progress.
+#' @param verbose Logical. Report progress.
+#' @param ... dotdotdot. Passed to \code{VariantAnnotation::readVcf}.
 #' @return List. \code{vcf_rng} contains the fixed part of the vcf-file as GRanges. \code{vcf} is the complete \code{vcfR::vcfR} object.
 #' @importClassesFrom VariantAnnotation VCF
-parse_vcf_VariantAnnotation<- function(vcf_filename, verbose = TRUE){
-#==========================================================
+parse_vcf_VariantAnnotation<- function(vcf_filename, verbose = TRUE, ...){
+#=========================================================================
 
     if(verbose) message('Reading in vcf file ...', appendLF = FALSE)
-    vcf        <- VariantAnnotation::readVcf(vcf_filename)
+    vcf        <- VariantAnnotation::readVcf(vcf_filename, ...)
     vcf        <- VariantAnnotation::expand(vcf)
     vcf_rng    <- SummarizedExperiment::rowRanges(vcf) #- FIXME: how do I use rowRanges from VariantAnnotation::class:VCF here?
     vcf_rng$ID <- names(vcf_rng)
