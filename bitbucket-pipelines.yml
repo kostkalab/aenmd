@@ -1,0 +1,11 @@
+pipelines:
+  default:
+    - step:
+        name: Sync GitHub Mirror
+        image: alpine/git:latest
+        clone:
+          enabled: false
+        script:
+          - git clone --bare git@bitbucket.org:dkostka/aenmd.git
+          - cd aenmd.git
+          - git push --mirror git@github.com:kostkalab/aenmd.git
