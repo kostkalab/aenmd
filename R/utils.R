@@ -1,3 +1,69 @@
+#' Get distance between a PTC (or any AA) and a downstream boundary (e.g., exon end)
+#' 
+#' @param aa_pos Integer. Location of the AA/PTC in the CDS. CDS coordinates (codonn), 1-based.
+#' @param ds_bnd Integer. Location of the last nucleotide before the boundary (e.g., last nucleotide in exon), 1-based.
+#' @return Integer. Distance of the AA/PTC (acutally, the downstream-most nucleotide covered by the AA/PTC to the boundary).
+#' @details
+#' \preformatted{
+#'NUC:  123456789...  ( '|' = exon-exon boundary (nucleotide to the left is last of upstream exon), X = PTC-covered, O = non-PTC-covered)
+#'AA:   111222333
+#'PTC:  ATGOOOOOOX|XXOOOOOOOOOOOO  aa_pos: 4, ds_bnd: 10, DIST: 0
+#'PTC:  ATGOOOOOOXX|XOOOOOOOOOOOO  aa_pos: 4, ds_bnd: 11, DIST: 0
+#'PTC:  ATGOOOOOOXXX|OOOOOOOOOOOO  aa_pos: 4, ds_bnd: 12, DIST: 0
+#'PTC:  ATGOOOOOOXXXO|OOOOOOOOOOO  aa_pos: 4, ds_bnd: 13, DIST: 1
+#'PTC:  ATGOOOOOOXXXOO|OOOOOOOOOO  aa_pos: 4, ds_bnd: 14, DIST: 2
+#'PTC:  ATGOOOOOOXXXOOO|OOOOOOOOO  aa_pos: 4, ds_bnd: 15, DIST: 3
+#' }
+get_dist_downstream <- function(aa_pos, ds_bnd){
+#-------------------------------------------------
+
+    #-nc_max <- (_pos * 3)       #- maximum nucleotide covered by PTC
+    # nc_min <- (aa_pos * 3) - 2   #- minimum nucleotide covered by PTC
+
+    #dist <- max(0, (ds_bnd - nc_min - 2))
+    #- or, equivalently
+    #dist <- max(0, ds_bnd - aa_pos * 3 ) 
+
+    if( ds_bnd < aa_pos * 3L - 2) stop('Downstream boundary before minimum nucleotide covered by AA/PTC')
+    return(max(0L, ds_bnd - aa_pos * 3L ))
+}
+
+#' Get distance between a PTC (or any AA) and a upstream boundary (e.g., a CSS site)
+#' 
+#' @param aa_pos Integer. Location of the AA/PTC in the CDS. CDS coordinates (codon), 1-based.
+#' @param us_bnd Integer. Location of the last nucleotide before the boundary (e.g., first nucleotide in exon), 1-based.
+#' @return Integer. Distance of the AA/PTC (acutally, the upstream-most nucleotide covered by the AA/PTC to the boundary).
+#' @details
+#' \preformatted{
+#'NUC:  123456789...  ( '|' = exon-exon boundary (nucleotide to the left is last of upstream exon), X = PTC-covered, O = non-PTC-covered)
+#'PTC  |ATGXXXOOOOOOOOO  aa_pos: 2, us_bnd: 1, DIST: 3
+#'PTC  |ATGOOOXXXOOOOOO  aa_pos: 3, us_bnd: 1, DIST: 6
+#'PTC  |ATGOOOOOOXXXOOO  aa_pos: 4, us_bnd: 1, DIST: 9
+#'PTC  |ATGOOOOOOOOOXXX  aa_pos: 5, us_bnd: 1, DIST: 12
+#'
+#'NUC:  123456789 
+#'PTC:  ATGOOOOOOXX|XOOOOOOOOOOO  aa_pos: 4, us_bnd: 12, DIST: 0
+#'PTC:  ATGOOOOOOX|XXOOOOOOOOOOO  aa_pos: 4, us_bnd: 11, DIST: 0
+#'PTC:  ATGOOOOOO|XXXOOOOOOXXXOO  aa_pos: 4, us_bnd: 10, DIST: 0
+#'PTC:  ATGOOOOO|OXXXOOOOOOXXXOO  aa_pos: 4, us_bnd: 9,  DIST: 1
+#'PTC:  ATGOOOO|OOXXXOOOOOOXXXOO  aa_pos: 4, us_bnd: 8,  DIST: 2
+#'PTC:  ATGOOO|OOOXXXOOOOOOXXXOO  aa_pos: 4, us_bnd: 7,  DIST: 3
+#' }
+get_dist_upstream  <- function(aa_pos, us_bnd){
+#-------------------------------------------------
+
+    #-nc_max <- (aa_pos * 3)       #- maximum nucleotide covered by PTC
+    # nc_min <- (aa_pos * 3) - 2   #- minimum nucleotide covered by PTC
+
+    #dist <- max(0, (nc_min - us_bnd ))
+    #- or, equivalently
+    #dist <- max(0, aa_pos * 3 - 2 - us_bnd ) 
+
+    if( us_bnd > aa_pos * 3L) stop('Upstream boundary after maximum nucleotide covered by AA/PTC')
+    return(max(0L, aa_pos * 3L - us_bnd - 2L ))
+}
+
+
 #' Variant coordinates in CDS space
 #'
 #' Get first and last base of a variant in a transcript's CDS coordinates

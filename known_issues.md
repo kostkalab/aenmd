@@ -46,3 +46,8 @@ With the current version the following known issues exist:
 * `aenmd` filters out variants that overlap splice regions in *any* annotated transcript. Therefore, variants that overlap splice regions in some transcripts but generate PTCs in others are currently not evaluated.
 
 * `aenmd` filters out variants that overlap splice regions, even when the splice region proper is not altered.
+
+
+#### differences to VEP
+* Downstream PTCs (not overlapping the actual variant)
+  * how many are those in gnomdad chr 21
