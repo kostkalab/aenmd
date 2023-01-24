@@ -98,18 +98,18 @@ process_variants <- function(vcf_rng,
 #'            Each variant has an ``ref`` and ``alt`` metadata column with DNAStrings of the sequences.
 #' @param css_prox_dist  Distance to the CSS defining NMD escape regions.
 #' @param penultimate_prox_dist Integer. Distance to the penultimate exon 3'end defining NMD escape regions.
-#' @param check_ref Logical. Should variants be verified against refernce sequence.
 #' @param verbose Logical. Report progress.
 #' @param multicore Logical. Should multiple cores be used in the computations (via the parallel pacakge).
 #' @param num_cores Integer. The number of cores to use. Only when \code{multicore = TRUE}.
 #' @param rettype Character. Should a `GRangesList` be returned (default, `rettype = 'grl'`) or shold results be collated into a `GRanges` object (`rettype = 'gr'`).
-#' @return List.
-#' @details For multicore, the `BiocParallel` default backand returned by `BiocParallel::bpparam()` is used.
+#' @return GRanges Object, containing ranges in \code{vcf_rng} that overlap transcripts in \code{aenmd}'s transcript set.
+#' The metadata column of this object contains a column named \code{res_aenmd} that contains annotation results.
+#' @details Coming up.
 #' @importFrom utils head tail
 #' @examples
 #' @export
 annotate_nmd <- function(vcf_rng, css_prox_dist = 150L, penultimate_prox_dist = 50L,
-                            check_ref = FALSE, verbose = FALSE , multicore = FALSE, num_cores = 2, rettype = 'grl'){
+                             verbose = FALSE , multicore = FALSE, num_cores = 2, rettype = 'grl'){
 #============================================================================================================================
 
     #- connect variants to exons
@@ -136,14 +136,20 @@ annotate_nmd <- function(vcf_rng, css_prox_dist = 150L, penultimate_prox_dist = 
     #- annotate variants for each transcript        
     if(multicore == FALSE){
         res <- pbapply::pblapply(seq_len( rlst |> length()),
-                                 \(i) annotate_variants_by_tx(names(rlst)[i], rlst[[i]],
-                                                              css_prox_dist = css_prox_dist, 
-                                                              penultimate_prox_dist = penultimate_prox_dist))
+                                 function(i) {
+                                    res <- annotate_variants_by_tx(names(rlst)[i], rlst[[i]],
+                                                                         css_prox_dist = css_prox_dist, 
+                                                                         penultimate_prox_dist = penultimate_prox_dist)
+                                    res$res_aenmd$transcript <- names(rlst)[i] 
+                                    res})
     } else {
         res <- parallel::mclapply(seq_len( rlst |> length()),
-                                      \(i) annotate_variants_by_tx(names(rlst)[i], rlst[[i]],
-                                                                   css_prox_dist = css_prox_dist, 
-                                                                   penultimate_prox_dist = penultimate_prox_dist),
+                                   function(i) {
+                                    res <- annotate_variants_by_tx(names(rlst)[i], rlst[[i]],
+                                                                         css_prox_dist = css_prox_dist, 
+                                                                         penultimate_prox_dist = penultimate_prox_dist)
+                                    res$res_aenmd$transcript <- names(rlst)[i] 
+                                    res },
 				                  mc.cores = num_cores)
     }
 

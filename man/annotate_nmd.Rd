@@ -8,7 +8,6 @@ annotate_nmd(
   vcf_rng,
   css_prox_dist = 150L,
   penultimate_prox_dist = 50L,
-  check_ref = FALSE,
   verbose = FALSE,
   multicore = FALSE,
   num_cores = 2,
@@ -24,8 +23,6 @@ Each variant has an ``ref`` and ``alt`` metadata column with DNAStrings of the s
 
 \item{penultimate_prox_dist}{Integer. Distance to the penultimate exon 3'end defining NMD escape regions.}
 
-\item{check_ref}{Logical. Should variants be verified against refernce sequence.}
-
 \item{verbose}{Logical. Report progress.}
 
 \item{multicore}{Logical. Should multiple cores be used in the computations (via the parallel pacakge).}
@@ -35,11 +32,12 @@ Each variant has an ``ref`` and ``alt`` metadata column with DNAStrings of the s
 \item{rettype}{Character. Should a `GRangesList` be returned (default, `rettype = 'grl'`) or shold results be collated into a `GRanges` object (`rettype = 'gr'`).}
 }
 \value{
-List.
+GRanges Object, containing ranges in \code{vcf_rng} that overlap transcripts in \code{aenmd}'s transcript set.
+The metadata column of this object contains a column named \code{res_aenmd} that contains annotation results.
 }
 \description{
 Wrapper function for annotating a set of variants with NMD escape
 }
 \details{
-For multicore, the `BiocParallel` default backand returned by `BiocParallel::bpparam()` is used.
+Coming up.
 }

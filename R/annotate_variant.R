@@ -456,6 +456,7 @@ annotate_variants_by_tx <- function( txname, vars, css_prox_dist = 150L,
             #- return INDELs only
             res <- res_idl$vars_idl
             dfr <- res_idl$tbl_idl |> S4Vectors::DataFrame()
+            dfr$transcript <- txname
             S4Vectors::mcols(res)$res_aenmd <- dfr
             return(res)
         }
@@ -463,6 +464,7 @@ annotate_variants_by_tx <- function( txname, vars, css_prox_dist = 150L,
         #- return SNVs only
         res <- res_snv$vars_snv
         dfr <- res_snv$tbl_snv |> S4Vectors::DataFrame()
+        dfr$transcript <- txname
         S4Vectors::mcols(res)$res_aenmd <- dfr
         return(res)
     } else {
