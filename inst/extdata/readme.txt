@@ -9,6 +9,7 @@ R -e '  library(vcfR);
         vcf <- read.vcfR("clinvar_20221211_noinfo.vcf.gz");
         set.seed(1223214);
         vcf_s <- vcf[sample(seq_len(dim(vcf)[1]), 1000) |> sort() ];
-        write.vcf(vcf_s, file="clinvar_20221211_noinfo_sample1k.vcf")'
+        write.vcf(vcf_s, file="clinvar_20221211_noinfo_sample1k.vcf.gz")'
+gunzip clinvar_20221211_noinfo_sample1k.vcf.gz
 bgzip clinvar_20221211_noinfo_sample1k.vcf
 
