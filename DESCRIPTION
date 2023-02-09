@@ -5,7 +5,7 @@ Version: 0.2.19
 Author: Dennis Kostka
 Maintainer: Dennis Kostka <kostka@pitt.edu>
 Description: Annotation of genetic variants with predicted escape from nonsene mediated decay (NMD).
-License: Artistic-2.0
+License: BSD_2_clause + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Imports: 

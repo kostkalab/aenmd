@@ -1,7 +1,7 @@
 #' Left-normalize genetic variants
 #'
 #' Convert variants into left-normalized version (PMID: 25701572)
-#' @param rng GRanges object representing a variant. Range here is *first* and *last* base of refernce variant.
+#' @param rng GRanges object representing a variant. Range here is *first* and *last* base of reference variant.
 #' @param ref DNAString. The reference allele of the variant
 #' @param alt DNAString. The alternative allele of the variant
 #' @param prefix DNAString. Nucleotides preceeding the variant, used for normalization.
