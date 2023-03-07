@@ -68,18 +68,6 @@ ad_swap_annotation <- function(PACKAGENAME){
     rlang::env_binding_lock(env = asNamespace('aenmd'),
                             nms = '._EA_dataPackage_name')
 
-    # #- not sure why this copy is there, but best replace it as well.
-    # ==> b/c of devtools::load_all()
-    # myenv <- rlang::search_env('package:aenmd')
-    # rlang::env_binding_unlock(env = myenv,
-    #                           nms = '._EA_dataPackage_name')
-    # assign(x     = '._EA_dataPackage_name', 
-    #        value = PACKAGENAME,
-    #        envir = myenv)
- 
-    # rlang::env_binding_lock(env = myenv,
-    #                         nms = '._EA_dataPackage_name')
-
     #- unload the old package
     unloadNamespace(asNamespace(old_package))
 }
