@@ -7,7 +7,7 @@
 normalize_var(rng, ref = NULL, alt = NULL, prefix = NULL)
 }
 \arguments{
-\item{rng}{GRanges object representing a variant. Range here is *first* and *last* base of refernce variant.}
+\item{rng}{GRanges object representing a variant. Range here is *first* and *last* base of reference variant.}
 
 \item{ref}{DNAString. The reference allele of the variant}
 
