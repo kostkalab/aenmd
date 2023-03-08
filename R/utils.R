@@ -211,8 +211,8 @@ is_vcf_rng <- function(vcf_rng, check_key = FALSE){
         if( sum(c('ref', 'alt') %in% cn) < 2 ) pass = FALSE
 
         #- they need to be DNAStringSets
-        if(!is(S4Vectors::mcols(vcf_rng)$ref), "DNAStringSet") pass = FALSE
-        if(!is(S4Vectors::mcols(vcf_rng)$alt), "DNAStringSet") pass = FALSE
+        if(!is(S4Vectors::mcols(vcf_rng)$ref, "DNAStringSet")) pass = FALSE
+        if(!is(S4Vectors::mcols(vcf_rng)$alt, "DNAStringSet")) pass = FALSE
 
         #- check that ranges have the correct length
         if( ! all(GenomicRanges::width(vcf_rng) == Biostrings::width(vcf_rng$ref)) ) pass = FALSE
