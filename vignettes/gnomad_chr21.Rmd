@@ -22,7 +22,7 @@ library(aenmd)
 library(BiocFileCache)
 
 vcf_url <- 'https://storage.googleapis.com/gcp-public-data--gnomad/release/2.1.1/liftover_grch38/vcf/exomes/gnomad.exomes.r2.1.1.sites.21.liftover_grch38.vcf.bgz'
-vcf_rng <- aenmd:::parse_vcf(bfcrpath(BiocFileCache(), vcf_url))
+vcf <- aenmd:::parse_vcf_vcfR(bfcrpath(BiocFileCache(), vcf_url))
 ```
 
 Next we process variants, focusing keeping only those that 
@@ -33,24 +33,20 @@ Next we process variants, focusing keeping only those that
 * If the variants are SNVs, they do create a PTC
 
 ```{r, process_data, eval=TRUE}
-vcf_rng <- process_variants(vcf_rng, check_ref = TRUE, verbose = TRUE)
-vcf_rng |> print()
+var_rng <- process_variants(vcf$vcf_rng, verbose = TRUE)
+var_rng |> print()
 ```
 Finally, we annotate these variants for escape from NMD.
 
 ```{r, annotate_variants, eval=TRUE}
-#tictoc::tic()
 #- remove the substetting below for complete chr21
-res <- annotate_nmd(vcf_rng[1:50])
-#tictoc::toc()
+res <- annotate_nmd(var_rng[1:50])
 res |> print()
 ```
 ...and we can focus on NMD-escaping variants:
-* we find 2,369 NMD-escaping variants on chr21 in gnomad
-* the minority (1,065) are SNVs
 
 ```{r, focus, eval= FALSE}
-ind <- S4Vectors::mcols(res)$res_aenmd[,"is_ptc"] & (rowSums(S4Vectors::mcols(res)$res_aenmd |> as.matrix()) >1 ) 
+ind <- S4Vectors::mcols(res)$res_aenmd[,"is_ptc"] & (rowSums(S4Vectors::mcols(res)$res_aenmd[,1:6] |> as.matrix()) >1 ) 
 res[ind]
 table(res[ind]$type)
 ```

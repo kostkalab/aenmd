@@ -4,7 +4,7 @@
 \alias{ad_get_exns_by_tx}
 \title{Exons, stratified by transcript}
 \usage{
-ad_get_exns_by_tx()
+ad_get_exns_by_tx(txname)
 }
 \arguments{
 \item{txname}{String. Name of transcript}

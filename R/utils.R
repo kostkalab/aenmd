@@ -211,8 +211,8 @@ is_vcf_rng <- function(vcf_rng, check_key = FALSE){
         if( sum(c('ref', 'alt') %in% cn) < 2 ) pass = FALSE
 
         #- they need to be DNAStringSets
-        if( class(S4Vectors::mcols(vcf_rng)$ref) != 'DNAStringSet' ) pass = FALSE
-        if( class(S4Vectors::mcols(vcf_rng)$alt) != 'DNAStringSet' ) pass = FALSE
+        if(!is(S4Vectors::mcols(vcf_rng)$ref), "DNAStringSet") pass = FALSE
+        if(!is(S4Vectors::mcols(vcf_rng)$alt), "DNAStringSet") pass = FALSE
 
         #- check that ranges have the correct length
         if( ! all(GenomicRanges::width(vcf_rng) == Biostrings::width(vcf_rng$ref)) ) pass = FALSE
@@ -230,3 +230,58 @@ make_keys <- function(vcf_rng){
         keys <- paste0(GenomicRanges::seqnames(vcf_rng), ":", starts,"|" ,vcf_rng$ref, "|", vcf_rng$alt)
         return(keys)
 }
+
+filter_splice_overlap <- function(rng){
+#--------------------------------------
+
+    ovc <- GenomicRanges::countOverlaps(rng, ad_get_spl_mask(), type="any", ignore.strand = TRUE, minoverlap = 1L)
+    ind <- which(ovc>0) |> sort() 
+  
+    if(length(ind)>0){
+        rng <- rng[-ind]
+    }
+    return(rng)        
+}
+
+filter_in_coding_exon <- function(rng){
+#--------------------------------------
+
+    #- these are contained in the tx mask, but they might not necessarily be within a single exon
+ 
+    ovc  <- GenomicRanges::countOverlaps(rng, ad_get_txs_mask(), type="within", ignore.strand = TRUE)
+    ind  <- which(ovc > 0)
+    if(length(ind)>0) rng  <- rng[ind]
+
+    return(rng)
+
+}
+
+filter_ptc_generating_snvs <- function(rng){
+#-------------------------------------------
+
+    tps <- rng$type
+    kys <- rng$key
+
+    mtc <- ad_is_ptc_snv(kys[tps == 'snv']) 
+    ind <- (tps != 'snv')
+    ind[tps == 'snv'] <- mtc
+
+    return(rng[ind])
+}
+
+stratify_by_tx <- function(rng){
+#-------------------------------
+
+    ov  <- GenomicRanges::findOverlaps(rng, ad_get_txs_mask())
+    txs <- ad_get_txs_mask()$transcript_id[S4Vectors::subjectHits(ov)] 
+
+    #- invert the list (why is there not a single command?)
+    inds        <- rep(seq_len(length(txs)),lengths(txs))
+    inds_by_tx  <- tapply(inds, unlist(txs),c)
+
+    return(inds_by_tx)
+}
+
+
+
+

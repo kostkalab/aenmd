@@ -3,7 +3,7 @@ collect_vars_by_exons <- function(txname, vars){
 #===============================================
 
     #- get exons for the transcript
-    if( is.null( exn <- get0(txname, future::value(._EA_exn_env)) )){
+    if( is.null( exn <- ad_get_exns_by_tx(txname) )){
         stop(paste0("Cannot find exons for ", txname))
     }
 
@@ -11,6 +11,8 @@ collect_vars_by_exons <- function(txname, vars){
     #- up till now: only one exon per variant
     #. i.e., multiple exon spanning variants are discarded.
     ov <- GenomicRanges::findOverlaps(vars,exn) #- query = vars, subjects = exn
+    if(length(ov) == 0) return(NULL)
+
     qH <- S4Vectors::queryHits(ov)
     sH <- S4Vectors::subjectHits(ov)
     if( (qH |> max() |> table()) > 1) stop("multiple-exon variants are not supported.")
@@ -48,8 +50,9 @@ annotate_vars_by_tx_snv <- function(txname, vars, exn, exn_x_vrs, css_prox_dist 
     #- We need to check, though, if the SNV generates a stop
     #  *in the current transcript*.
     kys        <- vars[evr_ind_snv]$key
-    is_ptc_snv <- triebeard::longest_match(future::value(._EA_snv_tri) ,kys) |>
-                  stringr::str_detect(pattern=txname)
+    #is_ptc_snv <- triebeard::longest_match(future::value(._EA_snv_tri) ,kys) |>
+    #              stringr::str_detect(pattern=txname)
+    is_ptc_snv <- ad_is_ptc_snv(kys, txname)                 
     evr_ind_snv_ysPtc <- evr_ind_snv[is_ptc_snv]
     evr_ind_snv_noPtc <- evr_ind_snv[!is_ptc_snv]
 
@@ -128,7 +131,8 @@ annotate_vars_by_tx_idl <- function(txname, vars, exn, exn_x_vrs, css_prox_dist 
 
     #- get the alternative version of the DNA sequence for each variant
     #------------------------------------------------------------------
-    if( is.null( seq_ref <- get0(txname, future::value(._EA_cds_env)) )){
+    #if( is.null( seq_ref <- get0(txname, future::value(._EA_cds_env)) )){
+    if( is.null( seq_ref <- ad_get_cds_by_tx(txname) )){
         stop(paste0("Cannot find sequence for ", txname))
     }
 
@@ -436,6 +440,21 @@ annotate_variants_by_tx <- function( txname, vars, css_prox_dist = 150L,
     #----------------------------------------
     res_tmp <- collect_vars_by_exons(txname, vars)
 
+    #- since we now do more "lenient" pre-filtering, we might not actually have overlap:
+    if(is.null(res_tmp)){
+        empty_range <- GenomicRanges::GRanges('chr0',IRanges::IRanges(start=0,width=0))
+        return(empty_range)
+    }
+
+    #- again, some variants might not actually overlap exons in an "pre-annotated" tx based on the mask
+    #- subset vars to the actually overlapping ones
+    #  variants we can use
+    inds_in  <- res_tmp$exn_x_vrs |> names() |> as.integer()
+    #  need to map the new indices in exn_x_vrs
+    nn    <- inds_in |> length() |> seq_len() |> as.character()
+    vars  <- vars[inds_in]
+    names(res_tmp$exn_x_vrs) <- nn
+
     #- get the SNVs
     #--------------
     res_snv <- annotate_vars_by_tx_snv(txname, vars, res_tmp$exn, res_tmp$exn_x_vrs, 
@@ -471,6 +490,7 @@ annotate_variants_by_tx <- function( txname, vars, css_prox_dist = 150L,
         #- return SNVs and INDELs
         res <- c(res_snv$vars_snv, res_idl$vars_idl)
         dfr <- dplyr::bind_rows(res_snv$tbl_snv, res_idl$tbl_idl) |> S4Vectors::DataFrame()
+        dfr$transcript <- txname
         S4Vectors::mcols(res)$res_aenmd <- dfr
         return(res)
     }

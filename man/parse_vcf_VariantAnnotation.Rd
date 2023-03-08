@@ -14,7 +14,7 @@ parse_vcf_VariantAnnotation(vcf_filename, verbose = TRUE, ...)
 \item{...}{dotdotdot. Passed to \code{VariantAnnotation::readVcf}.}
 }
 \value{
-List. \code{vcf_rng} contains the fixed part of the vcf-file as GRanges. \code{vcf} is the complete \code{vcfR::vcfR} object.
+List. \code{vcf_rng} contains the fixed part of the vcf-file as GRanges. \code{vcf_obj} is the complete \code{vcfR::vcfR} object.
 }
 \description{
 Uses VariantAnnotation package.

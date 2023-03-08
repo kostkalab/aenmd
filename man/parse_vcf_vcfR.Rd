@@ -4,15 +4,15 @@
 \alias{parse_vcf_vcfR}
 \title{Simple wrapper to read in in vcf file, make GRanges object.}
 \usage{
-parse_vcf_vcfR(vcf_filename, pass_only = TRUE)
+parse_vcf_vcfR(vcf_filename, verbose = TRUE)
 }
 \arguments{
 \item{vcf_filename}{String. Filename of vcf file.}
 
-\item{pass_only}{Logical. Keep only entries where FILTER = PASS}
+\item{verbose}{Logical. Report progress.}
 }
 \value{
-List. \code{vcf_rng} contains the fixed part of the vcf-file as GRanges. \code{vcf} is the complete \code{vcfR::vcfR} object.
+List. \code{vcf_rng} contains the fixed part of the vcf-file as GRanges. \code{vcf_obj} is the complete \code{vcfR::vcfR} object.
 }
 \description{
 Uses vcfR package.

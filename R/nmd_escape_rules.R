@@ -37,7 +37,7 @@ apply_nmd_escape_rules <- function(ptc_loc, exn_ind, exn_sta, exn_end, num_exn, 
 
     #- are we in a single exon transcrtipt
     #- need to use ._EA_set_env b/c num_exn only counts the coding exons, here we need all
-    if( exists(txname, where = future::value(._EA_set_env)) ) res["is_single"] <- TRUE
+    if( ad_is_single_exn_tx(txname) ) res["is_single"] <- TRUE
 
     #- the exon longer than 407bp?
     if( (exn_end - exn_sta) >= 407L ) res["is_407plus"] <- TRUE
