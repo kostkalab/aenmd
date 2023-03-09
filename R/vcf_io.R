@@ -30,6 +30,8 @@ parse_vcf_vcfR <- function(vcf_filename, verbose = TRUE){
     	alt     <- alt |> Biostrings::DNAStringSet()
     }
 
+    vcf_rng$ref     <- ref
+    vcf_rng$alt     <- alt
     vcf_rng$id      <- vcfR::getID(vcf)
     vcf_rng$filter  <- vcfR::getFILTER(vcf)
     vcf_rng$qual    <- vcfR::getQUAL(vcf)
