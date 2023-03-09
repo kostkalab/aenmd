@@ -15,8 +15,16 @@ parse_vcf_vcfR <- function(vcf_filename, verbose = TRUE){
     vcf_rng  <- GenomicRanges::GRanges(vcfR::getCHROM(vcf),
                                        IRanges::IRanges(vcfR::getPOS(vcf),
                                                         vcfR::getPOS(vcf)))
-    vcf_rng$ref     <- vcfR::getREF(vcf) |> Biostrings::DNAStringSet()
-    vcf_rng$alt     <- vcfR::getALT(vcf) |> Biostrings::DNAStringSet()
+
+    ref <- vcfR::getREF(vcf) 
+    alt <- vcfR::getALT(vcf) 
+    out <- (is.na(alt) | is.na(ref)) |> which()  #- yes, this happens...
+
+    vcf_rng <- vcf_rng[-out]
+    ref     <- ref[-out] |> Biostrings::DNAStringSet()
+    alt     <- alt[-out] |> Biostrings::DNAStringSet()
+    vcf     <- vcf[-out]
+
     vcf_rng$id      <- vcfR::getID(vcf)
     vcf_rng$filter  <- vcfR::getFILTER(vcf)
     vcf_rng$qual    <- vcfR::getQUAL(vcf)
