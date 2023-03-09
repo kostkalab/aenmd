@@ -1,6 +1,13 @@
 ## aenmd 
 
-### Annotating predicted escape from nonsense-mediated decay (NMD)
+### R package for annotating predicted escape from nonsense-mediated decay (NMD)
+
+- [Introduction](#introduction)
+- [Installing aenmd](#installing-aenmd)
+- [Getting started](#getting-started)
+- [Known issues](#known-issues)
+
+#### Introduction
 
 This `R` package provides functionality to annotate transcripts with genetic variants that introduce premature termination codons (stop codons) with predicted escape from NMD. More details can be found in the package documentation, and in our preprint [here](www.here.com). 
 
