@@ -54,6 +54,7 @@ ad_swap_annotation <- function(PACKAGENAME){
     swap_fu('ad_get_txs_mask',     PACKAGENAME)
     swap_fu('ad_get_spl_mask',     PACKAGENAME)
     swap_fu('ad_get_cds_by_tx',    PACKAGENAME)
+    swap_fu('ad_get_exns_by_tx',   PACKAGENAME)
     swap_fu('ad_is_single_exn_tx', PACKAGENAME)
     swap_fu('ad_is_ptc_snv',       PACKAGENAME)
 
