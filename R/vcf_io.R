@@ -20,10 +20,12 @@ parse_vcf_vcfR <- function(vcf_filename, verbose = TRUE){
     alt <- vcfR::getALT(vcf) 
     out <- (is.na(alt) | is.na(ref)) |> which()  #- yes, this happens...
 
-    vcf_rng <- vcf_rng[-out]
-    ref     <- ref[-out] |> Biostrings::DNAStringSet()
-    alt     <- alt[-out] |> Biostrings::DNAStringSet()
-    vcf     <- vcf[-out]
+    if(length(out) > 0){
+    	vcf_rng <- vcf_rng[-out]
+    	ref     <- ref[-out] |> Biostrings::DNAStringSet()
+    	alt     <- alt[-out] |> Biostrings::DNAStringSet()
+    	vcf     <- vcf[-out]
+    }
 
     vcf_rng$id      <- vcfR::getID(vcf)
     vcf_rng$filter  <- vcfR::getFILTER(vcf)
