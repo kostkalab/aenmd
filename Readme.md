@@ -13,8 +13,12 @@ This `R` package provides functionality to annotate transcripts with genetic var
 
 The `aenmd` package depends on transcript annotations that are provided via data packages that can be found in the [aenmd_data](https://github.com/kostkalab/aenmd_data) repository on GitHub. Further on, a command line interface/utility ([aenmd_cli](https://github.com/kostkalab/aenmd_cli)) is available on GitHub as well.
 
+#### Getting started on Google colab
+
+Below we have code for installing and getting started with `aenmd`. Since installation of Github packages can be somewhat "interesting" we also provide a notebook on Google colab, so that users can install `aenmd` in a controlled environment. You can get started by following this link: [getting started on Colab.](https://colab.research.google.com/github/kostkalab/aenmd/blob/master/colab_install_aenmd.ipynb)
 
 #### Installing `aenmd`
+
 ```R
 #- need the remotes package
 if(!require(remotes){
