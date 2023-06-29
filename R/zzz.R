@@ -30,7 +30,7 @@ ad_get_packagename <- function() return(._EA_dataPackage_name)
     #- load envs containing data we need
     packageStartupMessage("")
     packageStartupMessage(lne)
-    packageStartupMessage("Package: aenmd /e\u026A-i\u02D0-\u025Bn-\u025Bm-di\u02D0/")
+    packageStartupMessage("Package: aenmd (pronounceable as \"aimed\"/\"e\u026Amd\")")
     packageStartupMessage("(annotating escape from NMD)")
     packageStartupMessage(paste0("Version: ", utils::packageVersion('aenmd')))
     packageStartupMessage(lne)
