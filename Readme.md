@@ -21,7 +21,7 @@ Below we have code for installing and getting started with `aenmd`. Since instal
 
 ```R
 #- need the remotes package
-if(!require(remotes){
+if(!require(remotes)){
     install.packages("remotes")
 }
 
@@ -31,6 +31,48 @@ remotes::install_github("kostkalab/aenmd_data/aenmd.data.ensdb.v105")
 #- install aenmd package
 remotes::install_github("kostkalab/aenmd")
 ```
+
+##### Trouble shooting installing  `aenmd`
+
+Sometimes installation of `aenmd` can fail. If that happens, the following might help:
+
+* `R` version. Check that the version of `R` you are using is at least `4.1.0`. You can do so by running the command `R.Version()`
+
+* Trouble installing Bioconductor dependencies. If Bioconductor dependencies fail to install, it might help to (a) check/update your Bioconductor versiona and (b) install offending packages with `BiocManager::install()`. The following commands might be helpful (also see the [Bioconcductor installation instructions](https://www.bioconductor.org/install/)):
+  
+  ```
+  # 1. UPDATE BIOCONDUCTOR
+  #
+  #- This will (amongst other things) identify out-of-date packages. 
+  #- Run the suggested command to update your installation
+  > BiocManager::valid()
+  # ...
+  #
+  #create a valid installation with
+  #
+  #BiocManager::install(c(
+  #  "BiocManager", "broom", "bslib", "cpp11", "curl", #"dbplyr", "digest",
+  #  "downlit", "emdbook", "emmeans", "future", "gargle", #"ggfun", "ggplotify",
+  #  "gprofiler2", "igraph", "jsonlite", "lme4", "locfit", #"matrixStats",
+  #  "mvtnorm", "parallelly", "pbapply", "pkgbuild", #"plotly", "pROC",
+  #  "processx", "Rcpp", "RcppAnnoy", "RcppArmadillo", #"readxl", "rmarkdown",
+  #  "scatterpie", "sf", "shiny", "sp", "styler", "testthat", #"torch",
+  #  "usethis", "uwot", "vctrs", "xml2"
+  #), update = TRUE, ask = FALSE, force = TRUE)
+  #
+  # ...
+  ```
+  ```
+  # 2. INSTALL BIOCONDUCTOR DEPENDENCIES WITH BIOCMANAGER
+
+  #- aenmd's bioconductor dependencies
+
+  > aenmd_bioc_deps = c("BiocFileCache", "Biostrings", "BSgenome", "BSgenome.Hsapiens.NCBI.GRCh38","GenomeInfoDb", "GenomicRanges", "IRanges", "S4Vectors", "SummarizedExperiment", "VariantAnnotation")
+
+  #- Install them with BiocManager
+  > BiocManager::install(aenmd_bioc_deps)
+  ```
+If this does not help, please reach out to the developers.
 
 #### Getting started
 Below is a short example, where we use a small vcf file provided with the `aenmd` package. 
